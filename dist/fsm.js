@@ -51,7 +51,7 @@
                     model.__error = `unexpected state: ${currentState}`;
                 } else {
                     try {
-                        if (_enforceAllowedTransitions && previousState && !states[previousState].transitions.includes(model.__fsmActionName)) {
+                        if (_enforceAllowedTransitions && model.__fsmActionName && previousState && !states[previousState].transitions.includes(model.__fsmActionName)) {
                             model.__error = `unexpected action ${model.__fsmActionName} for state: ${currentState}`;
                         }
                     } catch(e) {

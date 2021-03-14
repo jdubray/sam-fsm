@@ -126,6 +126,15 @@ describe('FSM tests', () => {
       sm(model)()
       expect(model.__error).to.equal('unexpected action TOCK for state: TICKED')
     })
+
+    it('should handle the start state case', () => {
+      const sm = clock.stateMachine[0]
+      const model = {
+        pc: 'TICKED',
+      }
+      sm(model)()
+      expect(model.__error).to.equal(undefined)
+    })
   }) 
 })
 
