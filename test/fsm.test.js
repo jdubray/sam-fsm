@@ -30,10 +30,10 @@ describe('FSM tests', () => {
       },
       states: {
         TICKED: {
-          transitions: ['TOCK']
+          transitions: ['TOCK', 'TACK']
         },
         TOCKED: {
-          transitions: ['TICK']
+          transitions: ['TICK', 'TACK']
         },
         TACKED: {
           transtions: []
@@ -93,8 +93,8 @@ describe('FSM tests', () => {
     })
 
     it('should tick and tock...', () => {
-      tick()
       tock()
+      tick()
     })
 
     it('and tack', (done) => {

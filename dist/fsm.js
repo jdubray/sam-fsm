@@ -73,7 +73,7 @@
         const _pc = pc;
         const acceptors = _deterministic 
             ? [model => proposal => {
-                if (!_enforceAllowedTransitions || (_enforceAllowedTransitions && !_states[model[_pc]].transitions.includes(model.__fsmActionName))) {
+                if (!_enforceAllowedTransitions || (_enforceAllowedTransitions && _states[model[_pc]].transitions.includes(proposal.__fsmActionName))) {
                     model[`${_pc}_1`] = model[_pc];
                     model[_pc] = stateForAction(_actions, proposal.__fsmActionName);
                 }
