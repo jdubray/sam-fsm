@@ -13,6 +13,7 @@ const { fsm } = require('../dist/fsm')
 let tick = () => ({ tick: true, tock: false })
 let tock = () => ({ tock: true, tick: false })
 let tack = async (done) => await new Promise(resolve => setTimeout(() => resolve({ tack: true, done }), 1000))
+let clock 
 
 describe('FSM tests', () => {
   before(() => {
@@ -20,7 +21,7 @@ describe('FSM tests', () => {
     // machine components can be added independently
 
     // Instantiate fsm
-    const clock = fsm({
+    clock = fsm({
       pc0: 'TICKED',
       actions: {
         TICK: ['TICKED'],
@@ -39,7 +40,7 @@ describe('FSM tests', () => {
         }
       },
       deterministic: true,
-      lax:true,
+      lax:false,
       enforceAllowedTransitions: true
     })
 
@@ -99,7 +100,33 @@ describe('FSM tests', () => {
     it('and tack', (done) => {
       tack(done)
     })
+
+    
   })
+
+  describe('Unit tests', () => {
+    it('should enforce transitions and return no error for a valid transition', () => {
+      const sm = clock.stateMachine[0]
+      const model = {
+        pc: 'TICKED',
+        pc_1: 'TOCKED',
+        __fsmActionName: 'TICK'
+      }
+      sm(model)()
+      expect(model.__error).to.equal(undefined)
+    })
+
+    it('should enforce transitions and return an error for an invalid transition', () => {
+      const sm = clock.stateMachine[0]
+      const model = {
+        pc: 'TICKED',
+        pc_1: 'TOCKED',
+        __fsmActionName: 'TOCK'
+      }
+      sm(model)()
+      expect(model.__error).to.equal('unexpected action TOCK for state: TICKED')
+    })
+  }) 
 })
 
 //     it('should add an acceptor and some private state', () => {

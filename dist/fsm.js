@@ -44,13 +44,14 @@
         const _enforceAllowedTransitions = enforceAllowedTransitions;
         return [
             model => () => {
+                const previousState = model[`${_pc}_1`];
                 const currentState = model[_pc];
                 const stateLabels = Object.keys(_states);
-                if (!_lax && !stateLabels.includes(currentState)) {
+                if (_lax && !stateLabels.includes(currentState)) {
                     model.__error = `unexpected state: ${currentState}`;
                 } else {
                     try {
-                        if (_enforceAllowedTransitions && !states[model[_pc]].transitions.includes(model.__fsmActionName)) {
+                        if (_enforceAllowedTransitions && previousState && !states[previousState].transitions.includes(model.__fsmActionName)) {
                             model.__error = `unexpected action ${model.__fsmActionName} for state: ${currentState}`;
                         }
                     } catch(e) {
@@ -68,9 +69,11 @@
         const _states = states;
         const _actions = actions;
         const _deterministic = deterministic;
+        const _pc = pc;
         const acceptors = _deterministic 
             ? [model => proposal => {
-                model[pc] = stateForAction(_actions, proposal.__fsmActionName);
+                model[`${_pc}_1`] = model[_pc];
+                model[_pc] = stateForAction(_actions, proposal.__fsmActionName);
             }]
             : stateLabels.map(label => _states[label].acceptor);
         acceptors.push(model => proposal => { model.__fsmActionName = proposal.__fsmActionName; });
@@ -86,7 +89,7 @@
         addAction: addAction(actions),  
         stateMachine: stateMachineReactor({ pc0, actions, states, pc, deterministic, lax, enforceAllowedTransitions }),
         acceptors: stateMachineAcceptors({ pc0, actions, states, pc, deterministic, lax, enforceAllowedTransitions }),
-        send: action => ({ __fsmActionName: action }) 
+        send: action => () => ({ __fsmActionName: action }) 
     });
 
     // ISC License (ISC)
