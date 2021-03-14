@@ -24,8 +24,9 @@
     }
 
     function addAction(actions) {
+        const _actions = actions;
         return function(intent, action) {
-            if (checkAction(actions, action)) {
+            if (checkAction(_actions, action)) {
                 return function() {
                     const proposal = intent.apply(this, arguments);
                     proposal.__fsmActionName = action;
@@ -37,28 +38,42 @@
     }
 
     function stateMachineReactor({ pc0, actions, states, pc = 'pc', deterministic = false, lax = true, enforceAllowedTransitions = false }) {
-        return model => () => {
-                const pc = model[pc];
-                const stateLabels = Object.keys(states);
-                if (!lax && !stateLabels.includes(pc)) {
-                    model.__error = `unexpected state: ${pc}`;
+        const _pc = pc;
+        const _states = states;
+        const _lax = lax;
+        const _enforceAllowedTransitions = enforceAllowedTransitions;
+        return [
+            model => () => {
+                const currentState = model[_pc];
+                const stateLabels = Object.keys(_states);
+                if (!_lax && !stateLabels.includes(currentState)) {
+                    model.__error = `unexpected state: ${currentState}`;
                 } else {
-                    if (states[pc].transitions.includes(model.__fsmActionName)) {
-                        model.__error = `unexpected action ${model.__fsmActionName} for state: ${pc}`;
+                    try {
+                        if (_enforceAllowedTransitions && !states[model[_pc]].transitions.includes(model.__fsmActionName)) {
+                            model.__error = `unexpected action ${model.__fsmActionName} for state: ${currentState}`;
+                        }
+                    } catch(e) {
+                        model.__error = `unexpected error: ${e.message} for action ${model.__fsmActionName} and state: ${currentState}`;
                     } 
                 }
             }
+        ]
     }
+
+    const stateForAction = (actions, action) => actions[action][0];
 
     function stateMachineAcceptors({ pc0, actions, states, pc, deterministic, lax, enforceAllowedTransitions }) {
         const stateLabels = Object.keys(states);
-        
-        const acceptors = deterministic 
-            ? stateLabels.map(label => model => proposal => { 
-                    model[pc] = stateForAction(states, proposal.__fsmActionName);
-                })
-            : stateLabels.map(label => states[label].reactor);
-        acceptors.push(model => proposal => model.__fsmActionName = proposal.__fsmActionName);
+        const _states = states;
+        const _actions = actions;
+        const _deterministic = deterministic;
+        const acceptors = _deterministic 
+            ? [model => proposal => {
+                model[pc] = stateForAction(_actions, proposal.__fsmActionName);
+            }]
+            : stateLabels.map(label => _states[label].acceptor);
+        acceptors.push(model => proposal => { model.__fsmActionName = proposal.__fsmActionName; });
         return acceptors
     }
 
