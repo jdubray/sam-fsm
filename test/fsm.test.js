@@ -62,7 +62,7 @@ describe('FSM tests', () => {
         ],
         acceptors: [
           ...clock.acceptors,
-          model => proposal => { model.done = proposal.done }
+          model => ({ done }) => { model.done = done }
         ],
         reactors: clock.stateMachine
       },
