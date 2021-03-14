@@ -1,11 +1,11 @@
 (function (global, factory) {
     typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
     typeof define === 'function' && define.amd ? define(factory) :
-    (global = global || self, global.tp = factory());
+    (global = global || self, global.tpFSM = factory());
 }(this, function () { 'use strict';
 
     // ISC License (ISC)
-    // Copyright 2019 Jean-Jacques Dubray
+    // Copyright 2021 Jean-Jacques Dubray
 
     // Permission to use, copy, modify, and/or distribute this software for any purpose
     // with or without fee is hereby granted, provided that the above copyright notice

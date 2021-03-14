@@ -137,6 +137,7 @@ tick()
 tock()
 ```
 
+Here is the new [Rocket Launcher example](https://codepen.io/sam-pattern/pen/XWNGNBy)
 
 ## Library
 

@@ -12,7 +12,7 @@ const { fsm } = require('../dist/fsm')
 
 let tick = () => ({ tick: true, tock: false })
 let tock = () => ({ tock: true, tick: false })
-let tack = async () => await new Promise(resolve => setTimeout(() => resolve({ tack: true }), 1000))
+let tack = async (done) => await new Promise(resolve => setTimeout(() => resolve({ tack: true, done }), 1000))
 
 describe('FSM tests', () => {
   before(() => {
@@ -60,7 +60,10 @@ describe('FSM tests', () => {
           tock,
           tack
         ],
-        acceptors: clock.acceptors,
+        acceptors: [
+          ...clock.acceptors,
+          model => proposal => { model.done = proposal.done }
+        ],
         reactors: clock.stateMachine
       },
       render: state => {
@@ -71,6 +74,7 @@ describe('FSM tests', () => {
             expect(state.pc).to.equal('TOCKED')
           } else {
             expect(state.pc).to.equal('TACKED')
+            state.done()
           }
         }
       }
@@ -92,8 +96,8 @@ describe('FSM tests', () => {
       tock()
     })
 
-    it('and tack', () => {
-      tack()
+    it('and tack', (done) => {
+      tack(done)
     })
   })
 })
