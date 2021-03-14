@@ -81,6 +81,7 @@
         initialState: model => { 
             model[pc] = pc0;
             model.__fsmActionName = undefined;
+            return model
         }, 
         addAction: addAction(actions),  
         stateMachine: stateMachineReactor({ pc0, actions, states, pc, deterministic, lax, enforceAllowedTransitions }),
