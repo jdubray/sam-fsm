@@ -12,6 +12,7 @@ const { fsm } = require('../dist/fsm')
 
 let tick = () => ({ tick: true, tock: false })
 let tock = () => ({ tock: true, tick: false })
+let tack = async () => await new Promise(resolve => setTimeout(() => resolve({ tack: true }), 1000))
 
 describe('FSM tests', () => {
   before(() => {
@@ -23,7 +24,8 @@ describe('FSM tests', () => {
       pc0: 'TICKED',
       actions: {
         TICK: ['TICKED'],
-        TOCK: ['TOCKED']
+        TOCK: ['TOCKED'],
+        TACK: ['TACKED']
       },
       states: {
         TICKED: {
@@ -31,9 +33,13 @@ describe('FSM tests', () => {
         },
         TOCKED: {
           transitions: ['TICK']
+        },
+        TACKED: {
+          transtions: []
         }
       },
       deterministic: true,
+      lax:true,
       enforceAllowedTransitions: true
     })
 
@@ -42,6 +48,8 @@ describe('FSM tests', () => {
     // action action label to actions
     tick = clock.addAction(tick, 'TICK')
     tock = clock.addAction(tock, 'TOCK')
+    tack = clock.addAction(tack, 'TACK')
+
 
     // add fsm to SAM instance
     const intents = FSMTest({
@@ -49,7 +57,8 @@ describe('FSM tests', () => {
       component: {
         actions: [
           tick,
-          tock
+          tock,
+          tack
         ],
         acceptors: clock.acceptors,
         reactors: clock.stateMachine
@@ -58,14 +67,18 @@ describe('FSM tests', () => {
         if (state.__fsmActionName === 'TICK') { 
           expect(state.pc).to.equal('TICKED') 
         } else {
-          expect(state.pc).to.equal('TOCKED')
+          if (state.__fsmActionName === 'TOCK') {
+            expect(state.pc).to.equal('TOCKED')
+          } else {
+            expect(state.pc).to.equal('TACKED')
+          }
         }
       }
     }).intents
 
     tick = intents[0]
     tock = intents[1]
-
+    tack = intents[2]
   })
 
   describe('Initialization', () => {
@@ -74,9 +87,13 @@ describe('FSM tests', () => {
       expect(tock).to.exist
     })
 
-    it('should tick and tock', () => {
+    it('should tick and tock...', () => {
       tick()
       tock()
+    })
+
+    it('and tack', () => {
+      tack()
     })
   })
 })

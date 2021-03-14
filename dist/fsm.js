@@ -27,8 +27,8 @@
         const _actions = actions;
         return function(intent, action) {
             if (checkAction(_actions, action)) {
-                return function() {
-                    const proposal = intent.apply(this, arguments);
+                return async function() {
+                    const proposal = await intent.apply(this, arguments);
                     proposal.__fsmActionName = action;
                     return proposal
                 }
