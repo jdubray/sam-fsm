@@ -56,7 +56,6 @@ You can also use it within the browser; install via npm and use the sam.js file 
 ```
 
 ```javascript
-const { SAM, step, match } = tp
 const { fsm } = tpFSM
 
 const simpleFsm = fsm({
@@ -228,16 +227,17 @@ FSM methods:
 
 `initialState`    : wraps the SAM instance's intial state with the FSM internal variables (such as `pc`)
 
-`addAction`       : wraps regular SAM actions 
+`addAction`       : wraps regular SAM actions
+
 `send`            : can be used when the action is trivial and only needs to pass its label value as a proposal
 
 `acceptors`       : returns the fsm acceptors (as an array)
 
 `stateMachine`    : returns the fsm reactor (as an array of 1 element)
 
-From that point, everything else is similar to a regular SAM instance. 
+From that point, everything else is similar to a regular SAM instance, you can add additional acceptors and reactors (before or after the fsm ones). 
 
-`sam-fsm` does not yet support component local state. However you can have more than one fsm defined, as long as you use a different `pc` variable.
+`sam-fsm` does not yet support component local state. That being said, it supports more than one fsm in the same SAM instance, as long as you use a different `pc` variable but they can share actions!
 
 ## Exception Handling
 
@@ -262,7 +262,7 @@ render: (state) => {
 
 [Rocket Launcher](https://codepen.io/sam-pattern/pen/XWNGNBy)
 
-Please [the unit tests](https://github.com/jdubray/sam-fsm/tree/master/test) for more code samples
+Please see [the unit tests](https://github.com/jdubray/sam-fsm/tree/master/test) for additional code samples
 
 ## Support
 
