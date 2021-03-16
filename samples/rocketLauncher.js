@@ -1,6 +1,19 @@
 const { SAM, step, match } = tp
 const { fsm } = tpFSM
 
+// next-action for ticking and started states
+let _tick
+let _launch
+
+const countDownNAP = [{
+        condition: ({ counter }) => counter > 0,
+        nextAction: (state) => setTimeout(_tick, 1000)
+      },
+      {
+        condition: ({ counter }) => counter === 0,
+        nextAction: (state) => setTimeout(_launch, 100)
+      }]
+
 const rocketLauncher = fsm({
   pc0: 'ready',
   actions: {
@@ -15,10 +28,12 @@ const rocketLauncher = fsm({
       transitions: ['START']
     },
     started: {
-      transitions: ['TICK']
+      transitions: ['TICK', 'ABORT'],
+      naps: countDownNAP
     },
     ticking: {
-      transitions: ['TICK','LAUNCH','ABORT']
+      transitions: ['TICK','LAUNCH','ABORT'],
+      naps: countDownNAP
     },
     launching: {
       transitions: ['RESET']
@@ -98,17 +113,8 @@ const { intents } = SAM({
         currentActionUpdate
       ],
       naps: [
-        // decrement counter once launched
-        (state) => () => { 
-          counting(state) && state.counter > 0 && setTimeout(tick, 1000)
-          return false
-        },
-        // launch rocket when countdown is complete
-        (state) => () => {
-          state.counter === 0 && counting(state) && setTimeout(launch, 100)
-          return false
-        }
-      ] 
+          ...rocketLauncher.naps
+      ]
     }
   })
 
@@ -121,6 +127,8 @@ const { intents } = SAM({
     tick
   ] = intents
 
+_tick = tick
+_launch = launch
 
 SAM({
     render: (state) => {
@@ -129,15 +137,10 @@ SAM({
         state.clearError()
       } 
       
-      const currentIntent = match(
-        [counting(state), done(state), true],
-        ['abort', 'reset', 'start'] 
-      )
-      
       const stateRepresentation =  counting(state) ? state.counter : state.pc
       document.getElementById('app').innerHTML = `
         <p>Status: ${stateRepresentation}</p>
-        <button onclick="javascript: ${currentIntent}(); return false;">
+        <button onclick="javascript: ${state.currentAction}(); return false;">
           ${state.currentAction}
         </button>`
     }

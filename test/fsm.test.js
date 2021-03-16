@@ -30,7 +30,11 @@ describe('FSM tests', () => {
       },
       states: {
         TICKED: {
-          transitions: ['TOCK', 'TACK']
+          transitions: ['TOCK', 'TACK'],
+          naps: [{
+            condition: ({ counter }) => counter > 0,
+            nextAction: ({ done }) => done && done()
+          }]
         },
         TOCKED: {
           transitions: ['TICK', 'TACK']
@@ -134,6 +138,13 @@ describe('FSM tests', () => {
       }
       sm(model)()
       expect(model.__error).to.equal(undefined)
+    })
+
+    it('should generate state specific next-action-predicates', (done) => {
+      const nap = clock.naps
+      expect(nap.length).to.equal(1)
+      expect(nap[0]({ pc: 'TICKED', counter: 10, done })()).to.equal(false)
+      expect(nap[0]({ pc: 'TICKED', counter: 0, done })()).to.equal(undefined)
     })
   }) 
 })

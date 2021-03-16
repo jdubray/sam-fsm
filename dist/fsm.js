@@ -74,6 +74,19 @@
         return acceptors
     }
 
+    function stateMachineNaps({ states, pc }) {
+        const stateLabels = Object.keys(states);
+        return stateLabels
+                    .map(state => (states[state].naps || []).map(nap => ({ state, condition: nap.condition, nextAction: nap.nextAction })))
+                    .flat()
+                    .map(predicate => (state) => () => {
+                        if (state[pc] === predicate.state && predicate.condition(state)) {
+                            predicate.nextAction(state);
+                            return false
+                        }
+                    })
+    }
+
     const fsm = ({ pc0, actions, states, pc = 'pc', deterministic = false, lax = true, enforceAllowedTransitions = false }) => ({
         initialState: model => { 
             model[pc] = pc0;
@@ -83,6 +96,7 @@
         addAction: addAction(actions),  
         stateMachine: stateMachineReactor({ pc0, actions, states, pc, deterministic, lax, enforceAllowedTransitions }),
         acceptors: stateMachineAcceptors({ pc0, actions, states, pc, deterministic, lax, enforceAllowedTransitions }),
+        naps: stateMachineNaps({ states, pc }),
         send: action => () => ({ __fsmActionName: action }) 
     });
 

@@ -182,10 +182,10 @@ Here is the new [Rocket Launcher example](https://codepen.io/sam-pattern/pen/XWN
 ### Parameters
 - `pc0`                   : initial state 
 - `actions`               : an object where the keys are the action labels and the values the array of possible resulting states (one state only for deterministic state machines)
-- `states`                : an object where the keys are the state labels and the values are allowed transitions from the corresponding state (as an array of action lables)
+- `states`                : an object where the keys are the state labels and the values are allowed transitions from the corresponding state (as an array of action lables). States may optionally include `next-actions` that can be added to the next-action-predicate (nap) of a SAM instance
 - `deterministic`         : a boolean value, `true` if the FSM is deterministic
 - `enforceAllowedActions` : a boolean value, when `true` the acceptors will validate that a valid action is used to transition away from a state
-- `pc`                    : a string that is used to rename the `pc` variable, `{ pc: 'foo' }` will use `model.foo` as the control state variable.
+- `pc`                    : a string that is used to rename the `pc` variable, `{ pc: 'status' }` will use `model.status` as the control state variable.
 
 ### Integration with SAM
 
@@ -235,9 +235,40 @@ FSM methods:
 
 `stateMachine`    : returns the fsm reactor (as an array of 1 element)
 
-From that point, everything else is similar to a regular SAM instance, you can add additional acceptors and reactors (before or after the fsm ones). 
+From that point, everything else is similar to a regular SAM instance, you can add additional acceptors and reactors (before or after the fsm ones)
+
+`naps`            : returns the fsm next-action-predicates as a single, flat, array
 
 `sam-fsm` does not yet support component local state. That being said, it supports more than one fsm in the same SAM instance, as long as you use a different `pc` variable but they can share actions!
+
+### Next-Action predicates
+
+NAPs can be defined inline, in the state machine specification:
+
+```
+...
+states: {
+    ticking: {
+      transitions: ['TICK','LAUNCH','ABORT'],
+      naps: {
+        {
+          condition: ({ counter }) => counter > 0,
+          nextAction: (state) => setTimeout(_tick, 1000)
+        },{
+          condition: ({ counter }) => counter === 0,
+          nextAction: (state) => setTimeout(_launch, 100)
+        }
+      }
+    },
+...
+}
+```
+
+A NAP includes a condition (which could return `true` is the condition is reaching that particular state) and the next action as a function of the application state.
+
+The predicate triggers only when the state machine is in the given state (e.g. `ticking`)
+
+Intents need to be wired manually due to the interdependency it creates between the fsm and the SAM instance.
 
 ## Exception Handling
 
@@ -269,6 +300,7 @@ Please see [the unit tests](https://github.com/jdubray/sam-fsm/tree/master/test)
 Please post your questions/comments on the [SAM-pattern forum](https://gitter.im/jdubray/sam)
 
 ## Change Log
+- 0.9.1   Adds next-action-predicate in the fsm specification
 - 0.8.9   Ready for community review
 
 ## Copyright and license
