@@ -245,7 +245,7 @@ From that point, everything else is similar to a regular SAM instance, you can a
 
 NAPs can be defined inline, in the state machine specification:
 
-```
+```javascript
 ...
 states: {
     ticking: {
@@ -289,6 +289,38 @@ render: (state) => {
 }
 ```
 
+### Alternative specification format
+
+Some people prefer defining their FSM as a series of transitions. `sam-fsm` supports the following format:
+
+```javascript
+const transitions = [{
+    from: 'ready', to: 'started', on: 'START'
+  },{
+    from: 'started', to: 'ticking', on: 'TICK'
+  },{
+    from: 'ticking', to: 'ticking', on: 'TICK'
+  },{
+    from: 'ticking', to: 'aborted', on: 'ABORT'
+  },{
+    from: 'ticking', to: 'launched', on: 'LAUNCH'
+  },{
+    from: 'aborted', to: 'ready', on: 'RESET'
+  },{
+    from: 'launched', to: 'ready', on: 'RESET'
+  }]
+```
+You can use the `fsm.actionsAndStatesFor` to translate transitions into states and actions:
+
+```javascript
+const mySpec = fsm.actionsAndStatesFor(transitions)
+
+// and then as usual
+const clock = fsm(mySpec)
+```
+
+The function uses the first from state as the start state (`pc0`) and adds `deterministic` and `enforceAllowedTransitions` properties. You can of course add reactors as necessary.
+
 ## Code samples
 
 [Rocket Launcher](https://codepen.io/sam-pattern/pen/XWNGNBy)
@@ -300,6 +332,7 @@ Please see [the unit tests](https://github.com/jdubray/sam-fsm/tree/master/test)
 Please post your questions/comments on the [SAM-pattern forum](https://gitter.im/jdubray/sam)
 
 ## Change Log
+- 0.9.2   Adds `actionsAndStatesFor` to transform transitions into states and actions
 - 0.9.1   Adds next-action-predicate in the fsm specification
 - 0.8.9   Ready for community review
 

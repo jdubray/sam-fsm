@@ -23,6 +23,27 @@
         return actionLabels.includes(action)
     }
 
+    const pushAction = (s, a) => {
+        s.push(a);
+        return s
+    };
+
+    const actionsAndStatesFor = (transitions) => ({
+        pc0: transitions[0].from,
+        states: transitions.reduce( (s, t) => Object.assign(s, { 
+            [t.from]: { 
+                transitions: s[t.from] && s[t.from].transitions && s[t.from].transitions[0] 
+                    ? pushAction(s[t.from].transitions, t.on) 
+                    : [t.on] 
+            }, 
+            [t.to]: s[t.to] && s[t.to].transitions[0] 
+                ? s[t.to] 
+                : { transitions: t.to === t.from ? [t.on] : [] }}), {}),
+        actions: transitions.reduce( (a, t) => Object.assign(a, { [t.on]: [t.to] }), {}),
+        deterministic: true,
+        enforceAllowedTransitions: true
+    });
+
     function addAction(actions) {
         return function(intent, action) {
             if (checkAction(actions, action)) {
@@ -87,18 +108,22 @@
                     })
     }
 
-    const fsm = ({ pc0, actions, states, pc = 'pc', deterministic = false, lax = true, enforceAllowedTransitions = false }) => ({
-        initialState: model => { 
-            model[pc] = pc0;
-            model.__fsmActionName = undefined;
-            return model
-        }, 
-        addAction: addAction(actions),  
-        stateMachine: stateMachineReactor({ pc0, actions, states, pc, deterministic, lax, enforceAllowedTransitions }),
-        acceptors: stateMachineAcceptors({ pc0, actions, states, pc, deterministic, lax, enforceAllowedTransitions }),
-        naps: stateMachineNaps({ states, pc }),
-        send: action => () => ({ __fsmActionName: action }) 
-    });
+    function fsm ({ pc0, actions, states, pc = 'pc', deterministic = false, lax = true, enforceAllowedTransitions = false }) {
+        return {
+            initialState: model => { 
+                model[pc] = pc0;
+                model.__fsmActionName = undefined;
+                return model
+            }, 
+            addAction: addAction(actions),  
+            stateMachine: stateMachineReactor({ pc0, actions, states, pc, deterministic, lax, enforceAllowedTransitions }),
+            acceptors: stateMachineAcceptors({ pc0, actions, states, pc, deterministic, lax, enforceAllowedTransitions }),
+            naps: stateMachineNaps({ states, pc }),
+            send: action => () => ({ __fsmActionName: action }) 
+        }
+    }
+
+    fsm.actionsAndStatesFor = actionsAndStatesFor;
 
     // ISC License (ISC)
 

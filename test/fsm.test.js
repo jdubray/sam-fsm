@@ -8,7 +8,7 @@ const {
 // Create a new SAM instance
 const FSMTest = createInstance({ instanceName: 'FSMTest' })
 
-const { fsm } = require('../dist/fsm')
+const { fsm, actionsAndStatesFor } = require('../dist/fsm')
 
 let tick = () => ({ tick: true, tock: false })
 let tock = () => ({ tock: true, tick: false })
@@ -145,6 +145,39 @@ describe('FSM tests', () => {
       expect(nap.length).to.equal(1)
       expect(nap[0]({ pc: 'TICKED', counter: 10, done })()).to.equal(false)
       expect(nap[0]({ pc: 'TICKED', counter: 0, done })()).to.equal(undefined)
+    })
+
+    it('should transform transitions into states and actions', () => {
+      const transitions = [{
+        from: 'state1', to: 'state2', on: 'ACTION'
+      }]
+      console.log(actionsAndStatesFor)
+      const { states, actions } = fsm.actionsAndStatesFor(transitions)
+      expect(actions.ACTION[0]).to.equal('state2')
+      expect(states.state1.transitions[0]).to.equal('ACTION')
+      expect(states.state2.transitions.length).to.equal(0)
+    })
+
+    it('should transform the rocket launcher transitions into states and actions', () => {
+      const transitions = [{
+        from: 'ready', to: 'started', on: 'START'
+      },{
+        from: 'started', to: 'ticking', on: 'TICK'
+      },{
+        from: 'ticking', to: 'ticking', on: 'TICK'
+      },{
+        from: 'ticking', to: 'aborted', on: 'ABORT'
+      },{
+        from: 'ticking', to: 'launched', on: 'LAUNCH'
+      },{
+        from: 'aborted', to: 'ready', on: 'RESET'
+      },{
+        from: 'launched', to: 'ready', on: 'RESET'
+      }]
+      const { states, actions } = fsm.actionsAndStatesFor(transitions)
+      expect(actions.RESET[0]).to.equal('ready')
+      expect(states.ticking.transitions.length).to.equal(3)
+      expect(states.launched.transitions[0]).to.equal('RESET')
     })
   }) 
 })

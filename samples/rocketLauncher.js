@@ -2,14 +2,15 @@ const { SAM, step, match } = tp
 const { fsm } = tpFSM
 
 // next-action for ticking and started states
-let _tick
-let _launch
+let _tick, _launch
 
 const countDownNAP = [{
+        // decrement counter once started
         condition: ({ counter }) => counter > 0,
         nextAction: (state) => setTimeout(_tick, 1000)
       },
       {
+        // launch rocket when countdown is complete
         condition: ({ counter }) => counter === 0,
         nextAction: (state) => setTimeout(_launch, 100)
       }]
@@ -28,7 +29,7 @@ const rocketLauncher = fsm({
       transitions: ['START']
     },
     started: {
-      transitions: ['TICK', 'ABORT'],
+      transitions: ['TICK'],
       naps: countDownNAP
     },
     ticking: {
@@ -112,9 +113,7 @@ const { intents } = SAM({
         ...rocketLauncher.stateMachine,
         currentActionUpdate
       ],
-      naps: [
-          ...rocketLauncher.naps
-      ]
+      naps: [...rocketLauncher.naps]
     }
   })
 
