@@ -8,7 +8,7 @@ const {
 // Create a new SAM instance
 const FSMTest = createInstance({ instanceName: 'FSMTest' })
 
-const { fsm, actionsAndStatesFor } = require('../dist/fsm')
+const { fsm } = require('../dist/fsm')
 
 let tick = () => ({ tick: true, tock: false })
 let tock = () => ({ tock: true, tick: false })
@@ -151,7 +151,6 @@ describe('FSM tests', () => {
       const transitions = [{
         from: 'state1', to: 'state2', on: 'ACTION'
       }]
-      console.log(actionsAndStatesFor)
       const { states, actions } = fsm.actionsAndStatesFor(transitions)
       expect(actions.ACTION[0]).to.equal('state2')
       expect(states.state1.transitions[0]).to.equal('ACTION')
@@ -178,6 +177,30 @@ describe('FSM tests', () => {
       expect(actions.RESET[0]).to.equal('ready')
       expect(states.ticking.transitions.length).to.equal(3)
       expect(states.launched.transitions[0]).to.equal('RESET')
+    })
+
+    it('should flatten transitions', () => {
+      const sm = fsm.flattenTransitions({
+        NONE: {
+          MINE_PRESSED: "MINING"
+        },
+        MINING: {
+          CANCEL_PRESSED: "NONE",
+          MINE_CONFIRMED: "ACTIVE"
+        },
+        ACTIVE: {
+          CLAIM_REWARDS_CONFIRMED: "ACTIVE",
+          ADJUST_PRESSED: "ADJUSTING",
+          UNMINE_CONFIRMED: "NONE"
+        },
+        ADJUSTING: {
+          CANCEL_PRESSED: "ACTIVE",
+          MINE_CONFIRMED: "ACTIVE",
+          UNMINE_CONFIRMED: "NONE"
+        }
+      })
+      expect(sm[0].from).to.equal('NONE')
+      
     })
   }) 
 })

@@ -316,7 +316,7 @@ You can use the `fsm.actionsAndStatesFor` to translate transitions into states a
 const mySpec = fsm.actionsAndStatesFor(transitions)
 
 // and then as usual
-const clock = fsm(mySpec)
+const rocketLauncher = fsm(mySpec)
 ```
 
 The function uses the first from state as the start state (`pc0`) and adds `deterministic` and `enforceAllowedTransitions` properties. You can of course add reactors as necessary.

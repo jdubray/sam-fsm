@@ -44,6 +44,12 @@
         enforceAllowedTransitions: true
     });
 
+    const flattenTransitions = (transitions) => Object.keys(transitions).reduce((ft, t) => {
+        const state = transitions[t];
+        const actions = Object.keys(state);
+        return ft.concat(actions.map(a => ({ from: t, to: state[a], on: a })))
+    }, []);
+
     function addAction(actions) {
         return function(intent, action) {
             if (checkAction(actions, action)) {
@@ -123,6 +129,7 @@
         }
     }
 
+    fsm.flattenTransitions = flattenTransitions;
     fsm.actionsAndStatesFor = actionsAndStatesFor;
 
     // ISC License (ISC)
