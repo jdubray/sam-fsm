@@ -79,16 +79,18 @@ const countDown = model => ({ decBy }) => {
 
 
 // Reactors
-const currentActionUpdate = model => () => {
+const displayActionUpdate = model => () => {
   const currentState = model.pc
-  model.currentAction = match(
-    [
+  const displayState = [
       counting(model), 
       done(model), 
       true
-    ],
+    ]
+  model.displayAction = match( displayState,
     ['abort', 'reset', 'start']
   )
+  
+  model.displayColor = match( displayState, ['danger', 'info', 'warning'])
 }
 
 const { intents } = SAM({
@@ -111,7 +113,7 @@ const { intents } = SAM({
       ], 
       reactors: [
         ...rocketLauncher.stateMachine,
-        currentActionUpdate
+        displayActionUpdate
       ],
       naps: [...rocketLauncher.naps]
     }
@@ -139,8 +141,8 @@ SAM({
       const stateRepresentation =  counting(state) ? state.counter : state.pc
       document.getElementById('app').innerHTML = `
         <p>Status: ${stateRepresentation}</p>
-        <button onclick="javascript: ${state.currentAction}(); return false;">
-          ${state.currentAction}
+        <button class="btn btn-${state.displayColor || 'warning'} btn-sm" onclick="javascript: ${state.displayAction}(); return false;">
+          ${state.displayAction}
         </button>`
     }
   }) 
