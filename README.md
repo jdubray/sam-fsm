@@ -1,6 +1,6 @@
 # an FSM library 
 
-sam-fsm is a companion libray to the [sam-pattern](https://www.npmjs.com/package/sam-pattern). It provides a simple finite state machine implementation on top of the SAM Pattern. `sam-fsm` supports deterministic and non deterministic state machines.
+`sam-fsm` is a companion libray to the [sam-pattern](https://www.npmjs.com/package/sam-pattern). It provides a simple finite state machine implementation on top of the SAM Pattern. `sam-fsm` supports deterministic and non deterministic state machines. Several FSMs can run concurrently in the same SAM instance, making it really easy do build complex applications. The two libraries combined enable you to use control states when they make sense and not needing any when the control states would be irrelevant to the application state mutations.
 
 ## Table of Contents
 - [Installation](#installation)        
@@ -332,7 +332,8 @@ Please see [the unit tests](https://github.com/jdubray/sam-fsm/tree/master/test)
 Please post your questions/comments on the [SAM-pattern forum](https://gitter.im/jdubray/sam)
 
 ## Change Log
-- 0.9.2   Adds `actionsAndStatesFor` to transform transitions into states and actions
+- 0.9.7   Adds unit tests and cleans up doc and code sample
+- 0.9.2   Adds `actionsAndStatesFor` and `flattenTransitions` to transform transitions into states and actions
 - 0.9.1   Adds next-action-predicate in the fsm specification
 - 0.8.9   Ready for community review
 
