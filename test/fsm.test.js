@@ -7,6 +7,7 @@ const {
 
 // Create a new SAM instance
 const FSMTest = createInstance({ instanceName: 'FSMTest' })
+const DualFSMTest = createInstance({ instanceName: 'DualFSMTest' })
 
 const { fsm } = require('../dist/fsm')
 
@@ -203,4 +204,118 @@ describe('FSM tests', () => {
       
     })
   }) 
+
+  describe('Behavior', () => {
+    it('should support two fsms runnint concurrently in the same SAM instance', () => {
+
+      const clock1 = fsm({
+        pc: 'status1',
+        pc0: 'TICKED1',
+        actions: {
+          TICK1: ['TICKED1'],
+          TOCK1: ['TOCKED1']
+        },
+        states: {
+          TICKED1: {
+            transitions: ['TOCK1'],
+            naps: [{
+              condition: ({ counter }) => counter > 0,
+              nextAction: ({ done }) => done && done()
+            }]
+          },
+          TOCKED1: {
+            transitions: ['TICK1']
+          }
+        },
+        deterministic: true,
+        lax:false,
+        enforceAllowedTransitions: true
+      })
+
+      const clock2 = fsm({
+        pc: 'status2',
+        pc0: 'TICKED2',
+        actions: {
+          TICK2: ['TICKED2'],
+          TOCK2: ['TOCKED2']
+        },
+        states: {
+          TICKED2: {
+            transitions: ['TOCK2'],
+            naps: [{
+              condition: ({ counter }) => counter > 0,
+              nextAction: ({ done }) => done && done()
+            }]
+          },
+          TOCKED2: {
+            transitions: ['TICK2']
+          }
+        },
+        deterministic: true,
+        lax:false,
+        enforceAllowedTransitions: true
+      })
+      
+      const startState = clock2.initialState(clock1.initialState({}))
+  
+      let tick1 = () => ({ tick: true, tock: false })
+      let tock1 = () => ({ tock: true, tick: false })
+      let tick2 = () => ({ tick: true, tock: false })
+      let tock2 = () => ({ tock: true, tick: false })
+
+
+      // action action label to actions
+      tick1 = clock1.addAction(tick1, 'TICK1')
+      tock1 = clock1.addAction(tock1, 'TOCK1')
+      tick2 = clock2.addAction(tick2, 'TICK2')
+      tock2 = clock2.addAction(tock2, 'TOCK2')
+  
+      // add fsm to SAM instance
+      const intents = DualFSMTest({
+        initialState: startState,
+        component: {
+          actions: [
+            tick1,
+            tock1,
+            tick2,
+            tock2
+          ],
+          acceptors: [
+            ...clock1.acceptors,
+            ...clock2.acceptors,
+            model => ({ done }) => { model.done = done }
+          ],
+          reactors: [
+            ...clock1.stateMachine,
+            ...clock2.stateMachine
+          ]
+        },
+        render: state => {
+          if (state.__fsmActionName === 'TICK1') { 
+            expect(state.status1).to.equal('TICKED1') 
+          } else {
+            if (state.__fsmActionName === 'TOCK1') {
+              expect(state.status1).to.equal('TOCKED1')
+            } 
+          }
+          if (state.__fsmActionName === 'TICK2') { 
+            expect(state.status2).to.equal('TICKED2') 
+          } else {
+            if (state.__fsmActionName === 'TOCK2') {
+              expect(state.status2).to.equal('TOCKED2')
+            } 
+          }
+        }
+      }).intents
+  
+      tick1 = intents[0]
+      tock1 = intents[1]
+      tick2 = intents[2]
+      tock2 = intents[3]
+
+      tock1()
+      // tock2()
+
+    })
+  })
 })

@@ -1,6 +1,6 @@
 {
   "name": "sam-fsm",
-  "version": "0.9.3",
+  "version": "0.9.5",
   "description": "Finite State Machine library for the SAM Pattern",
   "main": "./dist/fsm.js",
   "scripts": {
@@ -55,6 +55,5 @@
     "sam-pattern": "^1.4.8",
     "uglify-es": "^3.3.9"
   },
-  "unpkg": "dist/fsm.js",
-  "dependencies": {}
+  "unpkg": "dist/fsm.js"
 }

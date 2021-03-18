@@ -1,0 +1,6 @@
+samples/
+test/
+*.png
+.babelrc
+.editorconfig
+.eslintrc
