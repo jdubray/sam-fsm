@@ -314,8 +314,9 @@ describe('FSM tests', () => {
       tock2 = intents[3]
 
       tock1()
-      // tock2()
-
+      tock2()
+      tick1()
+      tick2()
     })
   })
 })
