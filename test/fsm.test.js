@@ -8,6 +8,7 @@ const {
 // Create a new SAM instance
 const FSMTest = createInstance({ instanceName: 'FSMTest' })
 const DualFSMTest = createInstance({ instanceName: 'DualFSMTest' })
+const LocalFSMTest = createInstance({ instanceName: 'LocalFSMTest' })
 
 const { fsm } = require('../dist/fsm')
 
@@ -206,7 +207,7 @@ describe('FSM tests', () => {
   }) 
 
   describe('Behavior', () => {
-    it('should support two fsms runnint concurrently in the same SAM instance', () => {
+    it('should support two fsms running concurrently in the same SAM instance', () => {
 
       const clock1 = fsm({
         pc: 'status1',
@@ -317,6 +318,71 @@ describe('FSM tests', () => {
       tock2()
       tick1()
       tick2()
+    })
+
+    it('should support localState in the SAM instance', () => {
+      const clock = fsm({
+        componentName: 'tester',
+        pc: 'status',
+        pc0: 'TICKED',
+        actions: {
+          TICK1: ['TICKED'],
+          TOCK1: ['TOCKED']
+        },
+        states: {
+          TICKED: {
+            transitions: ['TOCK'],
+            naps: [{
+              condition: ({ counter }) => counter > 0,
+              nextAction: ({ done }) => done && done()
+            }]
+          },
+          TOCKED: {
+            transitions: ['TICK']
+          }
+        },
+        deterministic: true,
+        lax:false,
+        enforceAllowedTransitions: true
+      })
+
+      let tick = () => ({ tick: true, tock: false })
+      let tock = () => ({ tock: true, tick: false })
+      
+
+       // add fsm to SAM instance
+       const intents = LocalFSMTest({
+        component: {
+          name: 'tester',
+          localState: clock.initialState({}),
+          actions: [
+            tick,
+            tock
+          ],
+          acceptors: [
+            ...clock.acceptors,
+            model => ({ done }) => { model.done = done }
+          ],
+          reactors: [
+            ...clock.stateMachine,
+          ]
+        },
+        render: state => {
+          if (state.__fsmActionName === 'TICK') { 
+            expect(state.localState('tester').status).to.equal('TICKED') 
+          } else {
+            if (state.__fsmActionName === 'TOCK') {
+              expect(state.localState('tester').status).to.equal('TOCKED')
+            } 
+          }
+        }
+      }).intents
+  
+      tick = intents[0]
+      tock = intents[1]
+
+      tock()
+      tock()
     })
   })
 })

@@ -52,7 +52,7 @@
 
     function addAction(actions) {
         return function(intent, action) {
-            if (checkAction(actions, action)) {
+            if (checkAction(actions, action) && intent) {
                 return async function() {
                     const proposal = await intent.apply(this, arguments);
                     proposal.__fsmActionName = action;
@@ -63,11 +63,33 @@
         }
     }
 
-    function stateMachineReactor({ pc0, actions, states, pc = 'pc', deterministic = false, lax = true, enforceAllowedTransitions = false }) {
+    const modelGetValue = (model, componentName, key) => 
+        componentName 
+            ? typeof model.localState === 'function'
+                ? model.localState(componentName)[key]
+                : model.__components 
+                    ? model.__components[componentName][key]
+                    : undefined
+            : model[key];
+
+    const modelSetValue = (model, componentName, key, value) => {
+        if (componentName) {
+            if (typeof model.localState === 'function') {
+                model.localState(componentName)[key] = value;
+            } else {
+                model.__components = { [componentName]: { [key]: value }};
+            }
+        } else {
+            model[key] = value;
+        }
+        return value
+    };
+
+    function stateMachineReactor({ pc0, actions, states, pc = 'pc', componentName, deterministic = false, lax = true, enforceAllowedTransitions = false }) {
         return [
             model => () => {
-                const previousState = model[`${pc}_1`];
-                const currentState = model[pc];
+                const previousState = modelGetValue( model, componentName, `${pc}_1`);
+                const currentState = modelGetValue(model, componentName, pc);
                 const stateLabels = Object.keys(states);
                 const actionName = model.__fsmActionName;
                 if (lax && !stateLabels.includes(currentState)) {
@@ -87,13 +109,13 @@
 
     const stateForAction = (actions, action) => actions[action][0];
 
-    function stateMachineAcceptors({ pc0, actions, states, pc, deterministic, lax, enforceAllowedTransitions }) {
+    function stateMachineAcceptors({ pc0, actions, states, pc, componentName, deterministic, lax, enforceAllowedTransitions }) {
         const stateLabels = Object.keys(states);
         const acceptors = deterministic 
             ? [model => proposal => {
-                if (!enforceAllowedTransitions || (enforceAllowedTransitions && states[model[pc]].transitions.includes(proposal.__fsmActionName))) {
-                    model[`${pc}_1`] = model[pc];
-                    model[pc] = stateForAction(actions, proposal.__fsmActionName);
+                if (!enforceAllowedTransitions || (enforceAllowedTransitions && states[modelGetValue(model, componentName, pc)].transitions.includes(proposal.__fsmActionName))) {
+                    modelSetValue(model, componentName, `${pc}_1`, modelGetValue(model, componentName, pc));
+                    modelSetValue(model, componentName, pc, stateForAction(actions, proposal.__fsmActionName));
                 }
             }]
             : stateLabels.map(label => states[label].acceptor);
@@ -101,7 +123,7 @@
         return acceptors
     }
 
-    function stateMachineNaps({ states, pc }) {
+    function stateMachineNaps({ states, pc, componentName }) {
         const stateLabels = Object.keys(states);
         return stateLabels
                     .map(state => (states[state].naps || []).map(nap => ({ state, condition: nap.condition, nextAction: nap.nextAction })))
@@ -114,17 +136,17 @@
                     })
     }
 
-    function fsm ({ pc0, actions, states, pc = 'pc', deterministic = false, lax = true, enforceAllowedTransitions = false }) {
+    function fsm ({ componentName, pc0, actions, states, pc = 'pc', deterministic = false, lax = true, enforceAllowedTransitions = false }) {
         return {
             initialState: model => { 
-                model[pc] = pc0;
+                modelSetValue(model, componentName, pc, pc0);
                 model.__fsmActionName = undefined;
                 return model
             }, 
             addAction: addAction(actions),  
-            stateMachine: stateMachineReactor({ pc0, actions, states, pc, deterministic, lax, enforceAllowedTransitions }),
-            acceptors: stateMachineAcceptors({ pc0, actions, states, pc, deterministic, lax, enforceAllowedTransitions }),
-            naps: stateMachineNaps({ states, pc }),
+            stateMachine: stateMachineReactor({ componentName, pc0, actions, states, pc, deterministic, lax, enforceAllowedTransitions }),
+            acceptors: stateMachineAcceptors({ componentName, pc0, actions, states, pc, deterministic, lax, enforceAllowedTransitions }),
+            naps: stateMachineNaps({ states, componentName, pc }),
             send: action => () => ({ __fsmActionName: action }) 
         }
     }

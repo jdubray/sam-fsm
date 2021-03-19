@@ -9,8 +9,11 @@
   - [Getting started](#getting-started)           
 - [Library](#library)        
   - [Constructors](#constructors)        
-  - [Parameters](#parameters)        
-  - [Exception Handling](#exception-handling)    
+  - [Parameters](#parameters)   
+  - [Integration with SAM](#integration-with-sam)
+  - [Next-Action predicates](#next-action-predicates)
+  - [Exception Handling](#exception-handling)  
+  - [Alternative specification formats](#alternative-specification-format)  
 - [Code samples](#code-samples)        
 - [Support](#support)   
 - [Change Log](#change-log)    
@@ -332,10 +335,14 @@ Please see [the unit tests](https://github.com/jdubray/sam-fsm/tree/master/test)
 Please post your questions/comments on the [SAM-pattern forum](https://gitter.im/jdubray/sam)
 
 ## Change Log
-- 0.9.7   Adds unit tests and cleans up doc and code sample
+- 0.9.7   Adds support for localstate, new unit tests and cleans up doc and code sample
 - 0.9.2   Adds `actionsAndStatesFor` and `flattenTransitions` to transform transitions into states and actions
 - 0.9.1   Adds next-action-predicate in the fsm specification
 - 0.8.9   Ready for community review
+
+## To do
+- support for component local state (currently the FSMs are only running in the SAM instance's global state)
+- connect SAM's allowed actions with the FSMs enabled actions
 
 ## Copyright and license
 Code and documentation copyright 2021 Jean-Jacques Dubray. Code released under the ISC license. Docs released under Creative Commons.
