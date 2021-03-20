@@ -85,14 +85,15 @@ The FSM descriptor specifies:
 - the initial value of the state (`pc0`)
 - whether the state machine is deterministic or not
 - whether allowed transition need to be enforced
+- an optional SAM component name, when you want the FSM to be deployed in that component's local state
 
-Deterministic FSMs will mutate the `pc` variable for you. Non deterministic FSMs expect that you will provide one or more acceptors that update the `pc` variable.
+Deterministic FSMs will mutate the `pc` variable for you. Non deterministic FSMs expect that you will provide one or more acceptors that mutate the `pc` variable with the current control state value.
 
-Please note that `pc` is used commonly in TLA+ as the control state variable and is itself in reference to [John Von Neumann's](https://en.wikipedia.org/wiki/Program_counter) `program counter` (also called `instruction pointer` in x86 architectures).
+Please note that `pc` is used commonly in TLA+ as the control state variable name and is itself in reference to [John Von Neumann's](https://en.wikipedia.org/wiki/Program_counter) `program counter` (also called `instruction pointer` in x86 architectures).
 
-The `sam-fsm` library enables the overlaying of a regular SAM state machine making it easier to use FSM semantics when they make sense without compromising the robust structure of a TLA+ based state machine. Of course, `sam-fsm` also supports FSM only state machines, with an underlying SAM implementation. 
+The `sam-fsm` library enables the interleaving between one or more FSM and a regular SAM state machine making it easier to use FSM semantics when they make sense without compromising the robust structure of a TLA+ based state machine. Of course, `sam-fsm` also supports FSM-only state machines, simply using SAM as the underlying implementation. 
 
-The descriptor support both action and event semantics:
+The descriptor support both action and event semantics since actions are full-fledged SAM actions:
 ```javascript
   actions: {
     CALL_API: ['called'],
@@ -112,7 +113,7 @@ The descriptor support both action and event semantics:
   }
 ```
 
-Let's take a look at the example of a clock
+Let's take a look at the example of a clock:
 
 ```javascript
 const {
@@ -179,10 +180,10 @@ Here is the new [Rocket Launcher example](https://codepen.io/sam-pattern/pen/XWN
 
 ## Library
 
-### Constructors
-- `fsm`               : creates a new fsm instance 
+### Constructor
+- `fsm`                   : Instantiates a new fsm 
 
-### Parameters
+#### Constructor Parameters
 - `pc0`                   : initial state 
 - `actions`               : an object where the keys are the action labels and the values the array of possible resulting states (one state only for deterministic state machines)
 - `states`                : an object where the keys are the state labels and the values are allowed transitions from the corresponding state (as an array of action lables). States may optionally include `next-actions` that can be added to the next-action-predicate (nap) of a SAM instance
@@ -190,6 +191,8 @@ Here is the new [Rocket Launcher example](https://codepen.io/sam-pattern/pen/XWN
 - `deterministic`         : a boolean value, `true` if the FSM is deterministic
 - `enforceAllowedActions` : a boolean value, when `true` the acceptors will validate that a valid action is used to transition away from a state
 - `pc`                    : a string that is used to rename the `pc` variable, `{ pc: 'status' }` will use `model.status` as the control state variable.
+- `componentName`         : an optional SAM component name that will deploy the FSM in the SAM component local state tree
+- `blockUnexpectedActions`: when true, uses the SAM allowedActions implementation to block unexpected actions. When several FSMs are running the collection of allowed actions is the sum of all expected actions.
 
 ### Integration with SAM
 
@@ -198,27 +201,27 @@ Start by creating a SAM instance as usual:
 const SAMFSM = createInstance({ instanceName: 'SAMFSM' })
 ```
 
-`sam-fsm` provides five integration points: `initialState`, `addAction`, `send`, `acceptors` and the `stateMachine` reactor.
+`sam-fsm` provides five integration points: `initialState`, `addAction`, `event`, `acceptors` and the `stateMachine` reactor.
 
-Assuming your fsm as the `sam-fsm` instance name:
+Assuming your myFsm as the `sam-fsm` instance name:
 
 ```javascript
 const intents = SAMFSM({
-      initialState: fsm.initialState(yourInitialState),
+      initialState: myFsm.initialState(yourRegularSAMInitialState), // adds FSM specific hooks
       component: {
         actions: [
           action1, // a sam action, unrelated to the sam-fsm instance
           action2, // another regular sam action
-          fsm.addAction(action3, 'ACTION3') // a sam-fsm action
-          fsm.send('ACTION4') // creates an action that triggers ACTION4
+          myFsm.addAction(action3, 'ACTION3') // a sam-fsm action
+          myFsm.event('ON_SUCCESS') // creates a SAM action that publishes an event
         ],
         acceptors: [
-          ...fsm.acceptors, // the control state acceptors
+          ...myFsm.acceptors, // the control state acceptors
           acceptor1, // 
           acceptor2
         ],
         reactors: [
-          ...fsm.stateMachine, // the sam-fsm 
+          ...myFsm.stateMachine, // the sam-fsm 
           reactor1,  // a sam reactor, unrelated to the sam-fsm instance
           reactor2   // another regular reactor
         ]
@@ -227,23 +230,23 @@ const intents = SAMFSM({
   })
 ```
 
-FSM methods:
+FSM instance methods:
 
 `initialState`    : wraps the SAM instance's intial state with the FSM internal variables (such as `pc`)
 
 `addAction`       : wraps regular SAM actions
 
-`send`            : can be used when the action is trivial and only needs to pass its label value as a proposal
+`event`           : instantiates a SAM action that publishes an event (the action presents the event label value as a proposal)
 
 `acceptors`       : returns the fsm acceptors (as an array)
 
 `stateMachine`    : returns the fsm reactor (as an array of 1 element)
 
-From that point, everything else is similar to a regular SAM instance, you can add additional acceptors and reactors (before or after the fsm ones)
-
 `naps`            : returns the fsm next-action-predicates as a single, flat, array
 
-`sam-fsm` does not yet support component local state. That being said, it supports more than one fsm in the same SAM instance, as long as you use a different `pc` variable but they can share actions!
+From that point on, everything else is similar to a regular SAM instance, you can add additional acceptors, reactors (before or after the fsm ones) and naps as well.
+
+`sam-fsm` supports SAM components and their local state. Several FSMs can be deployed in the same SAM instance, as long as you use a different `pc` variable but they can share actions!
 
 ### Next-Action predicates
 
@@ -268,7 +271,7 @@ states: {
 }
 ```
 
-A NAP includes a condition (which could return `true` is the condition is reaching that particular state) and the next action as a function of the application state.
+A NAP includes a condition and the next action as a function of the application state. The condition would be evaluated only when the control state is equal to its parent state.
 
 The predicate triggers only when the state machine is in the given state (e.g. `ticking`)
 
@@ -348,16 +351,16 @@ const rocketLauncherStyle2 = fsm({
 })
 
 ```
-You can also use the `fsm.actionsAndStatesFor` to translate transitions into states and actions:
+You can also use the `fsm.actionsAndStatesFor` class method to translate transitions into states and actions (the transition style is detected automatically):
 
 ```javascript
 const { pc0, states, actions } = fsm.actionsAndStatesFor(transitions)
 
 // and then as usual
-const rocketLauncher = fsm({ pc0, states, actions })
+const rocketLauncherFSM = fsm({ pc0, states, actions })
 ```
 
-The function uses the first from state as the start state (`pc0`) and adds `deterministic` and `enforceAllowedTransitions` properties. You can of course add reactors as necessary.
+The function uses the first from state as the start state (`pc0`) and adds `deterministic` and `enforceAllowedTransitions` properties. You can of course add reactors as necessary. These styles do not support NAPs.
 
 ## Code samples
 
@@ -370,6 +373,8 @@ Please see [the unit tests](https://github.com/jdubray/sam-fsm/tree/master/test)
 Please post your questions/comments on the [SAM-pattern forum](https://gitter.im/jdubray/sam)
 
 ## Change Log
+- 0.9.9   Adds support for SAM allowedActions mechanism (blocking unexpected actions)
+          *** Breaking change *** the `send` instance method has been renamed `event`  
 - 0.9.8   Adds support for transitions in the constructor (in addition to actions/states)
 - 0.9.7   Adds support for localstate, new unit tests and cleans up doc and code sample
 - 0.9.2   Adds `actionsAndStatesFor` and `flattenTransitions` to transform transitions into states and actions
