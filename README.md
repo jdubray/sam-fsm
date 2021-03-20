@@ -373,6 +373,7 @@ Please see [the unit tests](https://github.com/jdubray/sam-fsm/tree/master/test)
 Please post your questions/comments on the [SAM-pattern forum](https://gitter.im/jdubray/sam)
 
 ## Change Log
+- 0.9.10  RC1 `sam-fsm` is feature complete!
 - 0.9.9   Adds support for SAM allowedActions mechanism (blocking unexpected actions)
           *** Breaking change *** the `send` instance method has been renamed `event`  
 - 0.9.8   Adds support for transitions in the constructor (in addition to actions/states)
