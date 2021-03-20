@@ -53,12 +53,13 @@
     function addAction(actions) {
         return function(intent, action) {
             if (checkAction(actions, action) && intent) {
-                intent.__actionName = 'action';
-                return async function() {
+                const wrapped = async function() {
                     const proposal = await intent.apply(this, arguments);
                     proposal.__actionName = action;
                     return proposal
-                }
+                };
+                wrapped.__actionName = action;
+                return wrapped
             }
             throw new Error(`addAction invalid action: ${action}`)
         }
@@ -186,7 +187,11 @@
             stateMachine: stateMachineReactor({ componentName, pc0, actions, states, transitions, pc, deterministic, lax, enforceAllowedTransitions, blockUnexpectedActions }),
             acceptors: stateMachineAcceptors({ componentName, pc0, actions, states, transitions, pc, deterministic, lax, enforceAllowedTransitions }),
             naps: stateMachineNaps({ states, componentName, pc }),
-            event: eventName => () => ({ __actionName: eventName }) 
+            event: eventName => { 
+                const action = () => ({ __actionName: eventName });
+                action.__actionName = eventName;
+                return action
+            } 
         }
     }
 
