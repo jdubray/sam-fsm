@@ -2,7 +2,7 @@
     typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
     typeof define === 'function' && define.amd ? define(factory) :
     (global = global || self, global.tpFSM = factory());
-}(this, function () { 'use strict';
+}(this, (function () { 'use strict';
 
     // ISC License (ISC)
     // Copyright 2021 Jean-Jacques Dubray
@@ -94,24 +94,27 @@
                 const previousState = modelGetValue( model, componentName, `${pc}_1`);
                 const currentState = modelGetValue(model, componentName, pc);
                 const actionName = model.__actionName;
-                if (lax && !stateLabels.includes(currentState)) {
+                if (!lax && !stateLabels.includes(currentState)) {
                     model.__error = `unexpected state: ${currentState}`;
                 } else {
                     try {
-                        if (enforceAllowedTransitions && actionName && previousState && !states[previousState].transitions.includes(actionName)) {
+                        if (actionName && previousState && !specification.states[previousState].transitions.includes(actionName)) {
                             model.__error = `unexpected action ${actionName} for state: ${currentState}`;
                         }
                     } catch(e) {
                         model.__error = `unexpected error: ${e.message} for action ${actionName} and state: ${currentState}`;
                     } 
                 }
-        
-                if (blockUnexpectedActions) {
-                    const currentState = modelGetValue(model, componentName, pc);
-                    const allowedActions = states[currentState].transitions;
-                }
             }
         ];
+        if (blockUnexpectedActions) {
+            
+            smr.push(model => () => {
+                const currentState = modelGetValue(model, componentName, pc);
+                const allowedActions = specification.states[currentState].transitions;
+                model.__allowedActions = model.__allowedActions.concat(allowedActions);
+            });
+        }
         return smr
     }
 
@@ -139,21 +142,28 @@
         actions = actions || specification.actions;
         const acceptors = deterministic 
             ? [model => proposal => {
-                if (!enforceAllowedTransitions || (enforceAllowedTransitions && states[modelGetValue(model, componentName, pc)].transitions.includes(proposal.__actionName))) {
-                    modelSetValue(model, componentName, `${pc}_1`, modelGetValue(model, componentName, pc));
+                const currentState = modelGetValue(model, componentName, pc);
+                if (!enforceAllowedTransitions 
+                    || (
+                        enforceAllowedTransitions 
+                        && specification.states[currentState].transitions.includes(proposal.__actionName)
+                    )
+                ) {
+                    modelSetValue(model, componentName, `${pc}_1`, currentState);
                     modelSetValue(model, componentName, pc, stateForAction(actions, proposal.__actionName));
                 }
             }]
-            : stateLabels.map(label => states[label].acceptor);
+            : stateLabels.map(label => specification.states[label].acceptor);
         acceptors.push(model => proposal => { model.__actionName = proposal.__actionName; });
         acceptors.push(model => () => { model.__allowedActions = []; });
         return acceptors
     }
 
     function stateMachineNaps({ states, transitions, pc, componentName }) {
-        const stateLabels = Object.keys(getStatesFrom(states, transitions).states);
+        const specification = getStatesFrom(states, transitions);
+        const stateLabels = Object.keys(specification.states);
         return stateLabels
-                    .map(state => (states[state].naps || []).map(nap => ({ state, condition: nap.condition, nextAction: nap.nextAction })))
+                    .map(state => (specification.states[state].naps || []).map(nap => ({ state, condition: nap.condition, nextAction: nap.nextAction })))
                     .flat()
                     .map(predicate => (state) => () => {
                         if (state[pc] === predicate.state && predicate.condition(state)) {
@@ -176,7 +186,7 @@
             stateMachine: stateMachineReactor({ componentName, pc0, actions, states, transitions, pc, deterministic, lax, enforceAllowedTransitions, blockUnexpectedActions }),
             acceptors: stateMachineAcceptors({ componentName, pc0, actions, states, transitions, pc, deterministic, lax, enforceAllowedTransitions }),
             naps: stateMachineNaps({ states, componentName, pc }),
-            send: action => () => ({ __actionName: action }) 
+            event: eventName => () => ({ __actionName: eventName }) 
         }
     }
 
@@ -191,4 +201,4 @@
 
     return index;
 
-}));
+})));

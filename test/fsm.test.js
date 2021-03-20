@@ -47,7 +47,8 @@ describe('FSM tests', () => {
       },
       deterministic: true,
       lax:false,
-      enforceAllowedTransitions: true
+      enforceAllowedTransitions: true,
+      blockUnexpectedActions: false
     })
 
     const startState = clock.initialState({})
@@ -84,6 +85,7 @@ describe('FSM tests', () => {
             state.done()
           }
         }
+        expect(state.hasError()).to.equal(false)
       }
     }).intents
 
@@ -103,7 +105,11 @@ describe('FSM tests', () => {
       tick()
     })
 
-    it('and tack (async action support)', (done) => {
+    it('should not tick a second time', () => {
+      tick()
+    })
+
+    it('but it should tack (async action support)', (done) => {
       tack(done)
     })
 
