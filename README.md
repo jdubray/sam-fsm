@@ -186,6 +186,7 @@ Here is the new [Rocket Launcher example](https://codepen.io/sam-pattern/pen/XWN
 - `pc0`                   : initial state 
 - `actions`               : an object where the keys are the action labels and the values the array of possible resulting states (one state only for deterministic state machines)
 - `states`                : an object where the keys are the state labels and the values are allowed transitions from the corresponding state (as an array of action lables). States may optionally include `next-actions` that can be added to the next-action-predicate (nap) of a SAM instance
+- `transitions`           : an alternative way to define the FSM specification (please see section on [Transitions](##alternative-specification-format))
 - `deterministic`         : a boolean value, `true` if the FSM is deterministic
 - `enforceAllowedActions` : a boolean value, when `true` the acceptors will validate that a valid action is used to transition away from a state
 - `pc`                    : a string that is used to rename the `pc` variable, `{ pc: 'status' }` will use `model.status` as the control state variable.
@@ -223,7 +224,7 @@ const intents = SAMFSM({
         ]
       },
       render: state => { console.log(state) }
-      })
+  })
 ```
 
 FSM methods:
@@ -312,14 +313,48 @@ const transitions = [{
   },{
     from: 'launched', to: 'ready', on: 'RESET'
   }]
+
+const rocketLauncherStyle1 = fsm({ 
+  pc0: 'ready', 
+  transitions, 
+  deterministic: true 
+})
+
+// or state - action - state
+const stateActionState = {
+        ready: {
+          START: "started"
+        },
+        started: {
+          TICK: "ticking"
+        },
+        ticking: {
+          TICK: "ticking",
+          ABORT: "aborted",
+          LAUNCH: "launched"
+        },
+        aborted: {
+          RESET: "ready"
+        },
+        launched: {
+          RESET: "ready"
+        }
+      }
+
+const rocketLauncherStyle2 = fsm({ 
+  pc0: 'ready', 
+  transitions: stateActionState, 
+  deterministic: true 
+})
+
 ```
-You can use the `fsm.actionsAndStatesFor` to translate transitions into states and actions:
+You can also use the `fsm.actionsAndStatesFor` to translate transitions into states and actions:
 
 ```javascript
-const mySpec = fsm.actionsAndStatesFor(transitions)
+const { pc0, states, actions } = fsm.actionsAndStatesFor(transitions)
 
 // and then as usual
-const rocketLauncher = fsm(mySpec)
+const rocketLauncher = fsm({ pc0, states, actions })
 ```
 
 The function uses the first from state as the start state (`pc0`) and adds `deterministic` and `enforceAllowedTransitions` properties. You can of course add reactors as necessary.
@@ -335,6 +370,7 @@ Please see [the unit tests](https://github.com/jdubray/sam-fsm/tree/master/test)
 Please post your questions/comments on the [SAM-pattern forum](https://gitter.im/jdubray/sam)
 
 ## Change Log
+- 0.9.8   Adds support for transitions in the constructor (in addition to actions/states)
 - 0.9.7   Adds support for localstate, new unit tests and cleans up doc and code sample
 - 0.9.2   Adds `actionsAndStatesFor` and `flattenTransitions` to transform transitions into states and actions
 - 0.9.1   Adds next-action-predicate in the fsm specification

@@ -74,10 +74,10 @@ describe('FSM tests', () => {
         reactors: clock.stateMachine
       },
       render: state => {
-        if (state.__fsmActionName === 'TICK') { 
+        if (state.__actionName === 'TICK') { 
           expect(state.pc).to.equal('TICKED') 
         } else {
-          if (state.__fsmActionName === 'TOCK') {
+          if (state.__actionName === 'TOCK') {
             expect(state.pc).to.equal('TOCKED')
           } else {
             expect(state.pc).to.equal('TACKED')
@@ -116,7 +116,7 @@ describe('FSM tests', () => {
       const model = {
         pc: 'TICKED',
         pc_1: 'TOCKED',
-        __fsmActionName: 'TICK'
+        __actionName: 'TICK'
       }
       sm(model)()
       expect(model.__error).to.equal(undefined)
@@ -127,7 +127,7 @@ describe('FSM tests', () => {
       const model = {
         pc: 'TICKED',
         pc_1: 'TOCKED',
-        __fsmActionName: 'TOCK'
+        __actionName: 'TOCK'
       }
       sm(model)()
       expect(model.__error).to.equal('unexpected action TOCK for state: TICKED')
@@ -292,17 +292,17 @@ describe('FSM tests', () => {
           ]
         },
         render: state => {
-          if (state.__fsmActionName === 'TICK1') { 
+          if (state.__actionName === 'TICK1') { 
             expect(state.status1).to.equal('TICKED1') 
           } else {
-            if (state.__fsmActionName === 'TOCK1') {
+            if (state.__actionName === 'TOCK1') {
               expect(state.status1).to.equal('TOCKED1')
             } 
           }
-          if (state.__fsmActionName === 'TICK2') { 
+          if (state.__actionName === 'TICK2') { 
             expect(state.status2).to.equal('TICKED2') 
           } else {
-            if (state.__fsmActionName === 'TOCK2') {
+            if (state.__actionName === 'TOCK2') {
               expect(state.status2).to.equal('TOCKED2')
             } 
           }
@@ -368,10 +368,10 @@ describe('FSM tests', () => {
           ]
         },
         render: state => {
-          if (state.__fsmActionName === 'TICK') { 
+          if (state.__actionName === 'TICK') { 
             expect(state.localState('tester').status).to.equal('TICKED') 
           } else {
-            if (state.__fsmActionName === 'TOCK') {
+            if (state.__actionName === 'TOCK') {
               expect(state.localState('tester').status).to.equal('TOCKED')
             } 
           }

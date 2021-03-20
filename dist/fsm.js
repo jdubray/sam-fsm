@@ -53,9 +53,10 @@
     function addAction(actions) {
         return function(intent, action) {
             if (checkAction(actions, action) && intent) {
+                intent.__actionName = 'action';
                 return async function() {
                     const proposal = await intent.apply(this, arguments);
-                    proposal.__fsmActionName = action;
+                    proposal.__actionName = action;
                     return proposal
                 }
             }
@@ -85,13 +86,14 @@
         return value
     };
 
-    function stateMachineReactor({ pc0, actions, states, pc = 'pc', componentName, deterministic = false, lax = true, enforceAllowedTransitions = false }) {
-        return [
+    function stateMachineReactor({ pc0, actions, transitions, states, pc = 'pc', componentName, deterministic = false, lax = true, enforceAllowedTransitions = false, blockUnexpectedActions = false }) {
+        const specification = getStatesFrom(states, transitions);
+        const stateLabels = Object.keys(specification.states);
+        const smr = [
             model => () => {
                 const previousState = modelGetValue( model, componentName, `${pc}_1`);
                 const currentState = modelGetValue(model, componentName, pc);
-                const stateLabels = Object.keys(states);
-                const actionName = model.__fsmActionName;
+                const actionName = model.__actionName;
                 if (lax && !stateLabels.includes(currentState)) {
                     model.__error = `unexpected state: ${currentState}`;
                 } else {
@@ -103,28 +105,53 @@
                         model.__error = `unexpected error: ${e.message} for action ${actionName} and state: ${currentState}`;
                     } 
                 }
+        
+                if (blockUnexpectedActions) {
+                    const currentState = modelGetValue(model, componentName, pc);
+                    const allowedActions = states[currentState].transitions;
+                }
             }
-        ]
+        ];
+        return smr
     }
 
     const stateForAction = (actions, action) => actions[action][0];
 
-    function stateMachineAcceptors({ pc0, actions, states, pc, componentName, deterministic, lax, enforceAllowedTransitions }) {
-        const stateLabels = Object.keys(states);
+    function getStatesFrom(states, transitions) {
+        if (!states) {
+            let specification;
+            switch (typeof transitions) {
+                case 'object':
+                    specification = actionsAndStatesFor(flattenTransitions(transitions));
+                    break
+                default:
+                    specification = actionsAndStatesFor(transitions);
+            }
+            return specification
+        } else {
+            return { states }
+        }
+    }
+
+    function stateMachineAcceptors({ pc0, actions, states, transitions, pc, componentName, deterministic, lax, enforceAllowedTransitions }) {
+        const specification = getStatesFrom(states, transitions);
+        const stateLabels = Object.keys(specification.states);
+        actions = actions || specification.actions;
         const acceptors = deterministic 
             ? [model => proposal => {
-                if (!enforceAllowedTransitions || (enforceAllowedTransitions && states[modelGetValue(model, componentName, pc)].transitions.includes(proposal.__fsmActionName))) {
+                if (!enforceAllowedTransitions || (enforceAllowedTransitions && states[modelGetValue(model, componentName, pc)].transitions.includes(proposal.__actionName))) {
                     modelSetValue(model, componentName, `${pc}_1`, modelGetValue(model, componentName, pc));
-                    modelSetValue(model, componentName, pc, stateForAction(actions, proposal.__fsmActionName));
+                    modelSetValue(model, componentName, pc, stateForAction(actions, proposal.__actionName));
                 }
             }]
             : stateLabels.map(label => states[label].acceptor);
-        acceptors.push(model => proposal => { model.__fsmActionName = proposal.__fsmActionName; });
+        acceptors.push(model => proposal => { model.__actionName = proposal.__actionName; });
+        acceptors.push(model => () => { model.__allowedActions = []; });
         return acceptors
     }
 
-    function stateMachineNaps({ states, pc, componentName }) {
-        const stateLabels = Object.keys(states);
+    function stateMachineNaps({ states, transitions, pc, componentName }) {
+        const stateLabels = Object.keys(getStatesFrom(states, transitions).states);
         return stateLabels
                     .map(state => (states[state].naps || []).map(nap => ({ state, condition: nap.condition, nextAction: nap.nextAction })))
                     .flat()
@@ -134,20 +161,22 @@
                             return false
                         }
                     })
+
+        
     }
 
-    function fsm ({ componentName, pc0, actions, states, pc = 'pc', deterministic = false, lax = true, enforceAllowedTransitions = false }) {
+    function fsm ({ componentName, pc0, actions, transitions, states, pc = 'pc', deterministic = false, lax = true, enforceAllowedTransitions = false, blockUnexpectedActions = false }) {
         return {
             initialState: model => { 
                 modelSetValue(model, componentName, pc, pc0);
-                model.__fsmActionName = undefined;
+                model.__actionName = undefined;
                 return model
             }, 
             addAction: addAction(actions),  
-            stateMachine: stateMachineReactor({ componentName, pc0, actions, states, pc, deterministic, lax, enforceAllowedTransitions }),
-            acceptors: stateMachineAcceptors({ componentName, pc0, actions, states, pc, deterministic, lax, enforceAllowedTransitions }),
+            stateMachine: stateMachineReactor({ componentName, pc0, actions, states, transitions, pc, deterministic, lax, enforceAllowedTransitions, blockUnexpectedActions }),
+            acceptors: stateMachineAcceptors({ componentName, pc0, actions, states, transitions, pc, deterministic, lax, enforceAllowedTransitions }),
             naps: stateMachineNaps({ states, componentName, pc }),
-            send: action => () => ({ __fsmActionName: action }) 
+            send: action => () => ({ __actionName: action }) 
         }
     }
 
