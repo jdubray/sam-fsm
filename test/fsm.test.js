@@ -28,7 +28,8 @@ describe('FSM tests', () => {
       actions: {
         TICK: ['TICKED'],
         TOCK: ['TOCKED'],
-        TACK: ['TACKED']
+        TACK: ['TACKED'],
+        TEST: []
       },
       states: {
         TICKED: {
@@ -53,20 +54,14 @@ describe('FSM tests', () => {
 
     const startState = clock.initialState({})
 
-    // action action label to actions
-    tick = clock.addAction(tick, 'TICK')
-    tock = clock.addAction(tock, 'TOCK')
-    tack = clock.addAction(tack, 'TACK')
-
-
     // add fsm to SAM instance
     const intents = FSMTest({
       initialState: startState,
       component: {
         actions: [
-          tick,
-          tock,
-          tack
+          clock.addAction(tick, 'TICK'),
+          clock.addAction(tock, 'TOCK'),
+          clock.addAction(tack, 'TACK')
         ],
         acceptors: [
           ...clock.acceptors,
@@ -115,7 +110,13 @@ describe('FSM tests', () => {
       tack(done)
     })
 
-    
+    it('should wrap actions', () => {
+      const myAction = clock.addAction(() => ({ test: true }), 'TEST')
+      const proposal = myAction()
+      proposal.then(({ test, __actionName }) => expect(test).to.equal(true) 
+                                                && expect(__actionName).to.equal('TEST')
+                                                )
+    })
   })
 
   describe('Unit tests', () => {
@@ -267,27 +268,15 @@ describe('FSM tests', () => {
       
       const startState = clock2.initialState(clock1.initialState({}))
   
-      let tick1 = () => ({ tick: true, tock: false })
-      let tock1 = () => ({ tock: true, tick: false })
-      let tick2 = () => ({ tick: true, tock: false })
-      let tock2 = () => ({ tock: true, tick: false })
-
-
-      // action action label to actions
-      tick1 = clock1.addAction(tick1, 'TICK1')
-      tock1 = clock1.addAction(tock1, 'TOCK1')
-      tick2 = clock2.addAction(tick2, 'TICK2')
-      tock2 = clock2.addAction(tock2, 'TOCK2')
-  
       // add fsm to SAM instance
-      const intents = DualFSMTest({
+      const [tick1, tock1, tick2, tock2] = DualFSMTest({
         initialState: startState,
         component: {
           actions: [
-            tick1,
-            tock1,
-            tick2,
-            tock2
+            clock1.addAction(() => ({ tick: true, tock: false }), 'TICK1'),
+            clock1.addAction(() => ({ tock: true, tick: false }), 'TOCK1'),
+            clock2.addAction(() => ({ tick: true, tock: false }), 'TICK2'),
+            clock2.addAction(() => ({ tock: true, tick: false }), 'TOCK2')
           ],
           acceptors: [
             ...clock1.acceptors,
@@ -316,11 +305,6 @@ describe('FSM tests', () => {
           }
         }
       }).intents
-  
-      tick1 = intents[0]
-      tock1 = intents[1]
-      tick2 = intents[2]
-      tock2 = intents[3]
 
       tock1()
       tock2()
@@ -334,8 +318,8 @@ describe('FSM tests', () => {
         pc: 'status',
         pc0: 'TICKED',
         actions: {
-          TICK1: ['TICKED'],
-          TOCK1: ['TOCKED']
+          TICK: ['TICKED'],
+          TOCK: ['TOCKED']
         },
         states: {
           TICKED: {
@@ -354,18 +338,14 @@ describe('FSM tests', () => {
         enforceAllowedTransitions: true
       })
 
-      let tick = () => ({ tick: true, tock: false })
-      let tock = () => ({ tock: true, tick: false })
-      
-
        // add fsm to SAM instance
-       const intents = LocalFSMTest({
+       const [tick, tock] = LocalFSMTest({
         component: {
           name: 'tester',
           localState: clock.initialState({}),
           actions: [
-            tick,
-            tock
+            clock.addAction(() => ({ tick: true, tock: false }), 'TICK'),
+            clock.addAction(() => ({ tock: true, tick: false }), 'TOCK')
           ],
           acceptors: [
             ...clock.acceptors,
@@ -386,11 +366,73 @@ describe('FSM tests', () => {
         }
       }).intents
   
-      tick = intents[0]
-      tock = intents[1]
+      tock()
+      tock()
+    })
 
-      tock()
-      tock()
+    it('should not need a SAM instance, just the SAM pattern', () => {
+
+      const clock = fsm({
+        pc: 'status',
+        pc0: 'TOCKED',
+        actions: {
+          TICK: ['TICKED'],
+          TOCK: ['TOCKED']
+        },
+        states: {
+          TICKED: {
+            transitions: ['TOCK']
+          },
+          TOCKED: {
+            transitions: ['TICK']
+          }
+        },
+        deterministic: true,
+        lax:false,
+        enforceAllowedTransitions: true
+      })
+
+      let model = clock.initialState({
+        counter: 0
+      })
+
+      const acceptors = clock.acceptors.map(acceptor => acceptor(model))
+      const reactors = clock.stateMachine.map(reactor => reactor(model))
+
+      let actions = {
+        tick: clock.addAction(() => ({tick: true, tock: false, incrementBy: 1 }), 'TICK'),
+        tock: clock.addAction(() => ({tock: true, tick: false, incrementBy: 1 }), 'TOCK')
+      }
+      
+      const accept = model => function(proposal) {
+        model.counter += proposal.incrementBy > 0 ? proposal.incrementBy : 0
+        acceptors.map(acceptor => acceptor(proposal))
+        reactors.map(reactor => reactor(proposal))
+        const nap = state.nap(model)
+        if (!nap) {
+          state.render(model)
+        }
+      }
+      
+      let state = {
+        render(model) {
+          if (model.__actionName === 'TICK') { 
+            expect(model.status).to.equal('TICKED') 
+          } else {
+            if (model.__actionName === 'TOCK') {
+              expect(model.counter).to.be.greaterThan(0)
+              expect(model.status).to.equal('TOCKED')
+            } 
+          }
+        }, 
+        
+        nap(model) {
+          return false
+        }
+      }
+
+      actions.tick().then(proposal => accept(model)(proposal))
+      actions.tock().then(proposal => accept(model)(proposal))
     })
   })
 })

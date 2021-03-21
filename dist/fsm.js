@@ -152,6 +152,8 @@
                 ) {
                     modelSetValue(model, componentName, `${pc}_1`, currentState);
                     modelSetValue(model, componentName, pc, stateForAction(actions, proposal.__actionName));
+                } else {
+                    model.__error = `unexpected action ${proposal.__actionName} for state: ${currentState}`;
                 }
             }]
             : stateLabels.map(label => specification.states[label].acceptor);

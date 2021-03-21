@@ -8,11 +8,11 @@
   - [Browsers](#browsers)        
   - [Getting started](#getting-started)           
 - [Library](#library)        
-  - [Constructors](#constructors)        
-  - [Parameters](#parameters)   
+  - [Constructor](#constructor)        
+    - [Parameters](#parameters)   
   - [Integration with SAM](#integration-with-sam)
-  - [Next-Action predicates](#next-action-predicates)
-  - [Exception Handling](#exception-handling)  
+  -   [Next-Action predicates](#next-action-predicates)
+  -   [Exception Handling](#exception-handling)  
   - [Alternative specification formats](#alternative-specification-format)  
 - [Code samples](#code-samples)        
 - [Support](#support)   
@@ -183,7 +183,7 @@ Here is the new [Rocket Launcher example](https://codepen.io/sam-pattern/pen/XWN
 ### Constructor
 - `fsm`                   : Instantiates a new fsm 
 
-#### Constructor Parameters
+#### Parameters
 - `pc0`                   : initial state 
 - `actions`               : an object where the keys are the action labels and the values the array of possible resulting states (one state only for deterministic state machines)
 - `states`                : an object where the keys are the state labels and the values are allowed transitions from the corresponding state (as an array of action lables). States may optionally include `next-actions` that can be added to the next-action-predicate (nap) of a SAM instance
@@ -248,7 +248,7 @@ From that point on, everything else is similar to a regular SAM instance, you ca
 
 `sam-fsm` supports SAM components and their local state. Several FSMs can be deployed in the same SAM instance, as long as you use a different `pc` variable but they can share actions!
 
-### Next-Action predicates
+#### Next-Action predicates
 
 NAPs can be defined inline, in the state machine specification:
 
@@ -277,7 +277,7 @@ The predicate triggers only when the state machine is in the given state (e.g. `
 
 Intents need to be wired manually due to the interdependency it creates between the fsm and the SAM instance.
 
-## Exception Handling
+#### Exception Handling
 
 Exceptions are reported as SAM exceptions which can be accessed via these four SAM methods:
 - `hasError`  
