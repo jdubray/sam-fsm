@@ -1,6 +1,6 @@
 # an FSM library 
 
-`sam-fsm` is a companion libray to the [sam-pattern](https://www.npmjs.com/package/sam-pattern). It provides a simple finite state machine implementation on top of the SAM Pattern. `sam-fsm` supports deterministic and non deterministic state machines. Several FSMs can run concurrently in the same SAM instance, making it really easy do build complex applications. The two libraries combined enable you to use control states when they make sense and not needing any when the control states would be irrelevant to the application state mutations.
+`sam-fsm` is a companion libray to the [sam-pattern](https://www.npmjs.com/package/sam-pattern). It provides a simple finite state machine implementation on top of the [SAM Pattern](http://sam.js.org) (which is itself a more robust state machine structure based on TLA+). `sam-fsm` supports deterministic and non deterministic state machines. Several FSMs can run concurrently in the same SAM instance, making it really easy do build sophisticated applications with complex state management needs. The two libraries combined enable you to use control states when they make sense and not needing any when the control states would be irrelevant to the application state mutations. It is just too cumbersome to specify a control state for all the actions, or a global state machine for your entire application state. `sam-fsm` + `sam-pattern` solves that problem.
 
 ## Table of Contents
 - [Installation](#installation)        
@@ -11,8 +11,9 @@
   - [Constructor](#constructor)        
     - [Parameters](#parameters)   
   - [Integration with SAM](#integration-with-sam)
-  -   [Next-Action predicates](#next-action-predicates)
-  -   [Exception Handling](#exception-handling)  
+    - [Next-Action predicates](#next-action-predicates)
+    - [Transition guards](#transition-guards)
+    - [Exception Handling](#exception-handling)  
   - [Alternative specification formats](#alternative-specification-format)  
 - [Code samples](#code-samples)        
 - [Support](#support)   
@@ -48,7 +49,7 @@ const simpleFsm = fsm({
 ```
 
 ### Browsers
-You can also use it within the browser; install via npm and use the sam.js file found within the download. For example:
+You can also use it within the browser; install via npm and use the ./dist/fsm.js file. For example:
 
 ```html
 <script src="./node_modules/sam-fsm/dist/fsm.js"></script>
@@ -277,6 +278,47 @@ The predicate triggers only when the state machine is in the given state (e.g. `
 
 Intents need to be wired manually due to the interdependency it creates between the fsm and the SAM instance.
 
+#### Transition guards
+
+The library supports transition guards which can be added to specific state transitions:
+
+```javascript
+const clock = fsm({
+        pc: 'status',
+        pc0: 'TOCKED',
+        actions: {
+          TICK_GUARDED: ['TICKED'],
+          TOCK_GUARDED: ['TOCKED']
+        },
+        states: {
+          TICKED: {
+            transitions: ['TOCK_GUARDED'],
+            guards: [{
+              action: 'TOCK_GUARDED',
+              // once the counter reaches 5, TICK_GUARDED and TOCK_GUARDED
+              // are no longer allowed
+              condition: ({ counter }) => counter < 5
+            }]
+          },
+          TOCKED: {
+            transitions: ['TICK_GUARDED'],
+            guards: [{
+              // The action name can be ommitted, in which case the first element of the transition
+              // array will be used
+              // action: 'TICK_GUARDED',
+              condition: ({ counter }) => counter < 5
+            }]
+          }
+        },
+        deterministic: true,
+        lax:false,
+        enforceAllowedTransitions: true,
+        blockUnexpectedActions: true
+      })
+```
+
+As their name suggests the transition will only be possible while the condition is true. In the case above, the transition will be disallowed once the counter value is greater or equal to 5. The last transition allowed would increment the counter value to 5 and from that point on, the clock won't be able to `tick` or `tock`.
+
 #### Exception Handling
 
 Exceptions are reported as SAM exceptions which can be accessed via these four SAM methods:
@@ -360,11 +402,13 @@ const { pc0, states, actions } = fsm.actionsAndStatesFor(transitions)
 const rocketLauncherFSM = fsm({ pc0, states, actions })
 ```
 
-The function uses the first from state as the start state (`pc0`) and adds `deterministic` and `enforceAllowedTransitions` properties. You can of course add reactors as necessary. These styles do not support NAPs.
+The function uses the first `from` state as the start state (`pc0`) and adds `deterministic` and `enforceAllowedTransitions` properties. You can, of course, add reactors as necessary. These styles do not support NAPs.
 
 ## Code samples
 
 [Rocket Launcher](https://codepen.io/sam-pattern/pen/XWNGNBy)
+
+[sam-fsm without the sam-pattern library](https://codepen.io/sam-pattern/pen/abBejoV)
 
 Please see [the unit tests](https://github.com/jdubray/sam-fsm/tree/master/test) for additional code samples
 
@@ -373,6 +417,8 @@ Please see [the unit tests](https://github.com/jdubray/sam-fsm/tree/master/test)
 Please post your questions/comments on the [SAM-pattern forum](https://gitter.im/jdubray/sam)
 
 ## Change Log
+- 0.9.12  Minifies the lib  (3.4kB)
+- 0.9.11  Fixes minor defect, adds sample without `sam-pattern` library
 - 0.9.10  RC1 `sam-fsm` is feature complete!
 - 0.9.9   Adds support for SAM allowedActions mechanism (blocking unexpected actions)
           *** Breaking change *** the `send` instance method has been renamed `event`  
@@ -381,10 +427,6 @@ Please post your questions/comments on the [SAM-pattern forum](https://gitter.im
 - 0.9.2   Adds `actionsAndStatesFor` and `flattenTransitions` to transform transitions into states and actions
 - 0.9.1   Adds next-action-predicate in the fsm specification
 - 0.8.9   Ready for community review
-
-## To do
-- support for component local state (currently the FSMs are only running in the SAM instance's global state)
-- connect SAM's allowed actions with the FSMs enabled actions
 
 ## Copyright and license
 Code and documentation copyright 2021 Jean-Jacques Dubray. Code released under the ISC license. Docs released under Creative Commons.

@@ -110,6 +110,9 @@ describe('FSM tests', () => {
       tack(done)
     })
 
+  })
+
+  describe('Unit tests', () => {
     it('should wrap actions', () => {
       const myAction = clock.addAction(() => ({ test: true }), 'TEST')
       const proposal = myAction()
@@ -117,9 +120,7 @@ describe('FSM tests', () => {
                                                 && expect(__actionName).to.equal('TEST')
                                                 )
     })
-  })
 
-  describe('Unit tests', () => {
     it('should enforce transitions and return no error for a valid transition', () => {
       const sm = clock.stateMachine[0]
       const model = {
@@ -433,6 +434,84 @@ describe('FSM tests', () => {
 
       actions.tick().then(proposal => accept(model)(proposal))
       actions.tock().then(proposal => accept(model)(proposal))
+    })
+
+    it('should enforce transition guards', () => {
+      const GuardedFSM = createInstance({ instanceName: 'GuardedFSM' })
+
+      const clock = fsm({
+        pc: 'status',
+        pc0: 'TOCKED',
+        actions: {
+          TICK_GUARDED: ['TICKED'],
+          TOCK_GUARDED: ['TOCKED']
+        },
+        states: {
+          TICKED: {
+            transitions: ['TOCK_GUARDED'],
+            guards: [{
+              action: 'TOCK_GUARDED',
+              // once the counter reaches 5, TICK_GUARDED and TOCK_GUARDED
+              // are no longer allowed
+              condition: ({ counter }) => counter < 5
+            }]
+          },
+          TOCKED: {
+            transitions: ['TICK_GUARDED'],
+            guards: [{
+              // The action name can be ommitted, in which case the first element of the transition
+              // action: 'TICK_GUARDED',
+              condition: ({ counter }) => counter < 5
+            }]
+          }
+        },
+        deterministic: true,
+        lax:false,
+        enforceAllowedTransitions: true,
+        blockUnexpectedActions: true
+      })
+
+      const startState = clock.initialState(clock.initialState({ counter: 0}))
+  
+      // add fsm to SAM instance
+      const [tick, tock] = GuardedFSM({
+        initialState: startState,
+        component: {
+          actions: [
+            clock.addAction(() => ({ tick: true, tock: false, incrementBy: 1 }), 'TICK_GUARDED'),
+            clock.addAction(() => ({ tock: true, tick: false, incrementBy: 1 }), 'TOCK_GUARDED')
+          ],
+          acceptors: [
+            ...clock.acceptors,
+            model => ({ incrementBy }) => { model.counter += incrementBy > 0 ? incrementBy : 0 },
+            model => ({ done }) => { model.done = done }
+          ],
+          reactors: [
+            ...clock.stateMachine
+          ]
+        },
+        render: state => {
+          if (state.__actionName === 'TICK_GUARDED') { 
+            expect(state.status).to.equal('TICKED') 
+          } else {
+            if (state.__actionName === 'TOCK_GUARDED') {
+              expect(state.counter).to.be.greaterThan(0)
+              expect(state.status).to.equal('TOCKED')
+            } 
+          }
+          expect(state.counter).to.be.lessThan(6)
+        }
+      }).intents
+
+      tick()
+      tock()
+      tick()
+      tock()
+      tick()
+      tock()
+      tick()
+      tock()
+      tick()
     })
   })
 })
