@@ -123,10 +123,6 @@ const {
 
 const { fsm } = require('sam-fsm')
 
-// Regular SAM actions, returning a proposal to update the model
-let tick = () => ({ tick: true, tock: false })
-let tock = () => ({ tock: true, tick: false })
-
 // Instantiate clock fsm
 const clock = fsm({
   pc0: 'TOCKED',
@@ -146,11 +142,6 @@ const clock = fsm({
   enforceAllowedTransitions: true
 })
 
-// action action label to clock actions
-tick = clock.addAction(tick, 'TICK')
-tock = clock.addAction(tock, 'TOCK')
-
-
 // Create a new SAM instance
 const FSMTest = createInstance({ instanceName: 'FSMTest' })
 
@@ -159,8 +150,9 @@ const intents = FSMTest({
   initialState: clock.initialState({}),
   component: {
     actions: [
-      tick,
-      tock
+      // Labeled SAM actions
+      ['TICK', () => ({ tick: true, tock: false })],
+      [ 'TOCK', () => ({ tock: true, tick: false })]
     ],
     acceptors: clock.acceptors,
     reactors: clock.stateMachine
@@ -170,8 +162,7 @@ const intents = FSMTest({
   }
 }).intents
 
-tick = intents[0]
-tock = intents[1]
+const [tick, tock] = intents
 
 tick()
 tock()
@@ -213,7 +204,8 @@ const intents = SAMFSM({
         actions: [
           action1, // a sam action, unrelated to the sam-fsm instance
           action2, // another regular sam action
-          myFsm.addAction(action3, 'ACTION3') // a sam-fsm action
+          ['ACTION3', action3], // a labeled SAM action
+          myFsm.addAction(action4, 'ACTION_4') // another way to create a labeled SAM action
           myFsm.event('ON_SUCCESS') // creates a SAM action that publishes an event
         ],
         acceptors: [
@@ -417,6 +409,7 @@ Please see [the unit tests](https://github.com/jdubray/sam-fsm/tree/master/test)
 Please post your questions/comments on the [SAM-pattern forum](https://gitter.im/jdubray/sam)
 
 ## Change Log
+- 0.9.15  Adds tests for labeled SAM actions
 - 0.9.12  Minifies the lib  (3.4kB)
 - 0.9.11  Fixes minor defect, adds sample without `sam-pattern` library
 - 0.9.10  RC1 `sam-fsm` is feature complete!
