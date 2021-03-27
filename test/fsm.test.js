@@ -14,7 +14,8 @@ const { fsm } = require('../dist/fsm')
 
 let tick = () => ({ tick: true, tock: false })
 let tock = () => ({ tock: true, tick: false })
-let tack = async (done) => await new Promise(resolve => setTimeout(() => resolve({ tack: true, done }), 1000))
+let tack = (done) => new Promise(resolve => setTimeout(() => { resolve({ tack: true, done })}, 1000))
+
 let clock 
 
 describe('FSM tests', () => {
@@ -59,13 +60,14 @@ describe('FSM tests', () => {
       initialState: startState,
       component: {
         actions: [
-          clock.addAction(tick, 'TICK'),
-          clock.addAction(tock, 'TOCK'),
-          clock.addAction(tack, 'TACK')
+          ['TICK', tick],
+          ['TOCK', tock],
+          ['TACK', tack]
         ],
         acceptors: [
           ...clock.acceptors,
-          model => ({ done }) => { model.done = done }
+          model => ({ done }) => { model.done = done },
+          model => proposal => model.prop = proposal
         ],
         reactors: clock.stateMachine
       },
@@ -274,10 +276,10 @@ describe('FSM tests', () => {
         initialState: startState,
         component: {
           actions: [
-            clock1.addAction(() => ({ tick: true, tock: false }), 'TICK1'),
-            clock1.addAction(() => ({ tock: true, tick: false }), 'TOCK1'),
-            clock2.addAction(() => ({ tick: true, tock: false }), 'TICK2'),
-            clock2.addAction(() => ({ tock: true, tick: false }), 'TOCK2')
+            ['TICK1', () => ({ tick: true, tock: false })],
+            ['TOCK1', () => ({ tock: true, tick: false })],
+            ['TICK2', () => ({ tick: true, tock: false })],
+            ['TOCK2', () => ({ tock: true, tick: false })]
           ],
           acceptors: [
             ...clock1.acceptors,
@@ -345,8 +347,8 @@ describe('FSM tests', () => {
           name: 'tester',
           localState: clock.initialState({}),
           actions: [
-            clock.addAction(() => ({ tick: true, tock: false }), 'TICK'),
-            clock.addAction(() => ({ tock: true, tick: false }), 'TOCK')
+            ['TICK', () => ({ tick: true, tock: false }), 'TICK'],
+            ['TOCK', () => ({ tock: true, tick: false })]
           ],
           acceptors: [
             ...clock.acceptors,
@@ -371,7 +373,7 @@ describe('FSM tests', () => {
       tock()
     })
 
-    it('should not need a SAM instance, just the SAM pattern', () => {
+    it('should not require a SAM instance, just the SAM pattern', () => {
 
       const clock = fsm({
         pc: 'status',
@@ -478,8 +480,8 @@ describe('FSM tests', () => {
         initialState: startState,
         component: {
           actions: [
-            clock.addAction(() => ({ tick: true, tock: false, incrementBy: 1 }), 'TICK_GUARDED'),
-            clock.addAction(() => ({ tock: true, tick: false, incrementBy: 1 }), 'TOCK_GUARDED')
+            ['TICK_GUARDED', () => ({ tick: true, tock: false, incrementBy: 1 })],
+            ['TOCK_GUARDED', () => ({ tock: true, tick: false, incrementBy: 1 })]
           ],
           acceptors: [
             ...clock.acceptors,
