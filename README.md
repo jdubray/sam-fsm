@@ -15,6 +15,7 @@
     - [Transition guards](#transition-guards)
     - [Exception Handling](#exception-handling)  
   - [Alternative specification formats](#alternative-specification-format)  
+  - [State Diagram](#state-diagram)
 - [Code samples](#code-samples)        
 - [Support](#support)   
 - [Change Log](#change-log)    
@@ -70,6 +71,9 @@ const simpleFsm = fsm({
   states: {
     START_STATE: {
       transitions: ['DO_SOMETHING']
+    },
+    END_STATE: {
+      transitions: []
     }
   },
   deterministic: true,
@@ -395,6 +399,32 @@ const rocketLauncherFSM = fsm({ pc0, states, actions })
 ```
 
 The function uses the first `from` state as the start state (`pc0`) and adds `deterministic` and `enforceAllowedTransitions` properties. You can, of course, add reactors as necessary. These styles do not support NAPs.
+
+### State Diagram
+
+The fsm comes with a [graphViz formated](http://magjac.com/graphviz-visual-editor/) state diagram
+
+```javascript
+const clock = fsm({ ... })
+
+console.log(clock.stateDiagram)
+
+// should yield
+digraph fsm_diagram {
+rankdir=LR;
+size="8,5"
+READY [shape = circle margin=0 fixedsize=true width=0.33 fontcolor=black style=filled color=black label="\n\n\nREADY"]
+END [shape = doublecircle margin=0 style=filled fontcolor=white color=black]
+node [shape = Mrecord];
+READY -> TICKED [label = "START"]
+TICKED -> TOCKED [label = "TOCK"];
+TOCKED -> TICKED [label = "TICK"];
+TOCKED -> END [label = "STOP"];
+}
+```
+
+<img src="graphviz.png"
+     style="width: 300px" />
 
 ## Code samples
 

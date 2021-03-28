@@ -515,5 +515,48 @@ describe('FSM tests', () => {
       tock()
       tick()
     })
+
+    it('should create a state diagram', () => {
+      const condition = ({ counter }) => counter < 5
+      const clockD = fsm({
+        pc: 'status',
+        pc0: 'TICKED',
+        actions: {
+          TICK_GUARDED: ['TICKED'],
+          TOCK_GUARDED: ['TOCKED'],
+          STOP: ['END']
+        },
+        states: {
+          TICKED: {
+            transitions: ['TOCK_GUARDED'],
+            guards: [{
+              action: 'TOCK_GUARDED',
+              // once the counter reaches 5, TICK_GUARDED and TOCK_GUARDED
+              // are no longer allowed
+              condition
+            }]
+          },
+          TOCKED: {
+            transitions: ['TICK_GUARDED', 'STOP'],
+            guards: [{
+              // The action name can be ommitted, in which case the first element of the transition
+              // action: 'TICK_GUARDED',
+              condition
+            }]
+          },
+          END: {
+            
+          }
+        },
+        deterministic: true,
+        lax:false,
+        enforceAllowedTransitions: true,
+        blockUnexpectedActions: true
+      })
+
+      const stateDiagram = clockD.stateDiagram.trim()
+      expect(stateDiagram[0]).to.equal('d')
+      expect(stateDiagram[stateDiagram.length - 1]).to.equal('}')
+    })
   })
 })
