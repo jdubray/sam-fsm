@@ -517,30 +517,26 @@ describe('FSM tests', () => {
     })
 
     it('should create a state diagram', () => {
-      const condition = ({ counter }) => counter < 5
+      const condition = ({ counter }) => counter > 5
       const clockD = fsm({
-        pc: 'status',
-        pc0: 'TICKED',
+        pc0: 'READY',
         actions: {
-          TICK_GUARDED: ['TICKED'],
-          TOCK_GUARDED: ['TOCKED'],
+          START: ['TICKED'],
+          TICK: ['TICKED'],
+          TOCK: ['TOCKED'],
           STOP: ['END']
         },
         states: {
+          READY: {
+            transitions: ['START'],
+          },
           TICKED: {
-            transitions: ['TOCK_GUARDED'],
-            guards: [{
-              action: 'TOCK_GUARDED',
-              // once the counter reaches 5, TICK_GUARDED and TOCK_GUARDED
-              // are no longer allowed
-              condition
-            }]
+            transitions: ['TOCK'],
           },
           TOCKED: {
-            transitions: ['TICK_GUARDED', 'STOP'],
+            transitions: ['TICK', 'STOP'],
             guards: [{
-              // The action name can be ommitted, in which case the first element of the transition
-              // action: 'TICK_GUARDED',
+              action: 'STOP',
               condition
             }]
           },
