@@ -211,7 +211,8 @@ const intents = SAMFSM({
           action1, // a sam action, unrelated to the sam-fsm instance
           action2, // another regular sam action
           ['ACTION3', action3], // a labeled SAM action
-          myFsm.addAction(action4, 'ACTION_4') // another way to create a labeled SAM action
+          ['ACTION4', action4, mySecondFSM], // a labeled SAM action associated to a specific fsm
+          myFsm.addAction(action4, 'ACTION_5') // another way to create a labeled SAM action
           myFsm.event('ON_SUCCESS') // creates a SAM action that publishes an event
         ],
         acceptors: [
@@ -331,6 +332,8 @@ When the parent and/or composite fsm use their local states, the same logic appl
 const parentFSM = fsm({ 
   pc: 'parentStatus', 
   states: {
+    // Specify the parent state machine as usual including
+    // the composite state
     COMPOSITE_STATE: { ... }
   },
   ... 
@@ -338,14 +341,37 @@ const parentFSM = fsm({
 
 const compositeStateFSM = fsm({ 
         ...
+        // a composite fsm is specified as a regular fsm
+        // add a composite property that includes a
+        // composite descriptor
         composite: {
+          // a reference to the parentFSM
           of: parentFSM,
+          // specify the parent composite state label, 
+          // where it can be found (pc) and an optional
+          // component name
           onState: { pc: 'parentStatus', label: 'COMPOSITE_STATE', component: 'optionalParentComponentName' },
           transitions: [
+            // on reaching one ore more end states
+            // trigger an intent and construct the proposal
+            // from this list of properties from the model
             { onState: 'END', action: intentToTrigger, proposal: ['counter'] }
           ]
         }
         ...
+})
+
+// the SAM instance needs to be specified with labeled actions that also 
+// include a reference to their respective fsm (parent, child1, child2, ...)
+const intents = SAMFSM({
+      ...
+      component: {
+        actions: [
+          ['ACTION1', action1, parentFSM],
+          ['ACTION2', action2, parentFSM],
+          ['ACTION3', action3, compositeStateFSM],
+        ],
+      ...
 })
 ```
 
@@ -475,7 +501,7 @@ Please see [the unit tests](https://github.com/jdubray/sam-fsm/tree/master/test)
 Please post your questions/comments on the [SAM-pattern forum](https://gitter.im/jdubray/sam)
 
 ## Change Log
-- 0.9.18  Adds support for composite state machine
+- 0.9.19  Adds support for composite state machine
 - 0.9.17  Adds GraphViz state diagram
 - 0.9.15  Adds tests for labeled SAM actions
 - 0.9.12  Minifies the lib  (3.4kB)

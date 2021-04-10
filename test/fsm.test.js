@@ -61,9 +61,9 @@ describe('FSM tests', () => {
       initialState: startState,
       component: {
         actions: [
-          ['TICK', tick, clock],
-          ['TOCK', tock, clock],
-          ['TACK', tack, clock]
+          ['TICK', tick],
+          ['TOCK', tock],
+          ['TACK', tack]
         ],
         acceptors: [
           ...clock.acceptors,
@@ -451,8 +451,8 @@ describe('FSM tests', () => {
           name: 'tester',
           localState: clock.initialState({}),
           actions: [
-            ['TICK', () => ({ tick: true, tock: false }), clock],
-            ['TOCK', () => ({ tock: true, tick: false }), clock]
+            ['TICK', () => ({ tick: true, tock: false })],
+            ['TOCK', () => ({ tock: true, tick: false })]
           ],
           acceptors: [
             ...clock.acceptors,
@@ -584,8 +584,8 @@ describe('FSM tests', () => {
         initialState: startState,
         component: {
           actions: [
-            ['TICK_GUARDED', () => ({ tick: true, tock: false, incrementBy: 1 }), clock],
-            ['TOCK_GUARDED', () => ({ tock: true, tick: false, incrementBy: 1 }), clock]
+            ['TICK_GUARDED', () => ({ tick: true, tock: false, incrementBy: 1 })],
+            ['TOCK_GUARDED', () => ({ tock: true, tick: false, incrementBy: 1 })]
           ],
           acceptors: [
             ...clock.acceptors,
