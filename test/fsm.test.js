@@ -8,6 +8,7 @@ const {
 // Create a new SAM instance
 const FSMTest = createInstance({ instanceName: 'FSMTest' })
 const DualFSMTest = createInstance({ instanceName: 'DualFSMTest' })
+const CompositeFSMTest = createInstance({ instanceName: 'CompositeFSMTest' })
 const LocalFSMTest = createInstance({ instanceName: 'LocalFSMTest' })
 
 const { fsm } = require('../dist/fsm')
@@ -54,15 +55,15 @@ describe('FSM tests', () => {
     })
 
     const startState = clock.initialState({})
-
+    
     // add fsm to SAM instance
     const intents = FSMTest({
       initialState: startState,
       component: {
         actions: [
-          ['TICK', tick],
-          ['TOCK', tock],
-          ['TACK', tack]
+          ['TICK', tick, clock],
+          ['TOCK', tock, clock],
+          ['TACK', tack, clock]
         ],
         acceptors: [
           ...clock.acceptors,
@@ -139,7 +140,8 @@ describe('FSM tests', () => {
       const model = {
         pc: 'TICKED',
         pc_1: 'TOCKED',
-        __actionName: 'TOCK'
+        __actionName: 'TOCK',
+        __stateMachineIdForLastAction: clock.id
       }
       sm(model)()
       expect(model.__error).to.equal('unexpected action TOCK for state: TICKED')
@@ -276,10 +278,10 @@ describe('FSM tests', () => {
         initialState: startState,
         component: {
           actions: [
-            ['TICK1', () => ({ tick: true, tock: false })],
-            ['TOCK1', () => ({ tock: true, tick: false })],
-            ['TICK2', () => ({ tick: true, tock: false })],
-            ['TOCK2', () => ({ tock: true, tick: false })]
+            ['TICK1', () => ({ tick: true, tock: false }), clock1],
+            ['TOCK1', () => ({ tock: true, tick: false }), clock1],
+            ['TICK2', () => ({ tick: true, tock: false }), clock2],
+            ['TOCK2', () => ({ tock: true, tick: false }), clock2]
           ],
           acceptors: [
             ...clock1.acceptors,
@@ -315,6 +317,108 @@ describe('FSM tests', () => {
       tick2()
     })
 
+    it('should support composite state machines concurrently in the same SAM instance', () => {
+
+      const clock1 = fsm({
+        pc: 'status1',
+        pc0: 'TICKED1',
+        actions: {
+          TICK1: ['TICKED1'],
+          TOCK1: ['TOCKED1']
+        },
+        states: {
+          TICKED1: {
+            transitions: ['TOCK1']
+          },
+          TOCKED1: {
+            transitions: ['TICK1']
+          }
+        },
+        deterministic: true,
+        lax:false,
+        enforceAllowedTransitions: true
+      })
+
+      const clock2 = fsm({
+        pc: 'status2',
+        pc0: 'TICKED2',
+        actions: {
+          TICK2: ['TICKED2'],
+          TOCK2: ['TOCKED2']
+        },
+        // clock2 can only tick or tock when 
+        // the first clock is in TOCKED state
+        // this is a global guard on all clock2
+        // transitions
+        composite: {
+          of: clock1,
+          onState: { pc: 'status1', label: 'TOCKED1' },
+          transitions: [
+            // When clock2 reaches TOCKED2 state
+            // an automatic transition is triggered
+            // on clock1  (cross fsm NAP)
+            { onState: 'TOCKED2', action: 'TICK1', proposal: ['counter'] }
+          ]
+        },
+        states: {
+          TICKED2: {
+            transitions: ['TOCK2']
+          },
+          TOCKED2: {
+            transitions: ['TICK2']
+          }
+        },
+        deterministic: true,
+        lax:false,
+        enforceAllowedTransitions: true
+      })
+      
+      const startState = clock2.initialState(clock1.initialState({}))
+  
+      // add fsm to SAM instance
+      const [tick1, tock1, tick2, tock2] = CompositeFSMTest({
+        initialState: startState,
+        component: {
+          actions: [
+            ['TICK1', () => ({ tick: true, tock: false }), clock1],
+            ['TOCK1', () => ({ tock: true, tick: false }), clock1],
+            ['TICK2', () => ({ tick: true, tock: false }), clock2],
+            ['TOCK2', () => ({ tock: true, tick: false }), clock2]
+          ],
+          acceptors: [
+            ...clock1.acceptors,
+            ...clock2.acceptors,
+            model => ({ done }) => { model.done = done }
+          ],
+          reactors: [
+            ...clock1.stateMachine,
+            ...clock2.stateMachine
+          ]
+        },
+        render: state => {
+          if (state.__actionName === 'TICK1') { 
+            expect(state.status1).to.equal('TICKED1') 
+          } else {
+            if (state.__actionName === 'TOCK1') {
+              expect(state.status1).to.equal('TOCKED1')
+            } 
+          }
+          if (state.__actionName === 'TICK2') { 
+            expect(state.status2).to.equal('TICKED2') 
+          } else {
+            if (state.__actionName === 'TOCK2') {
+              expect(state.status2).to.equal('TOCKED2')
+            } 
+          }
+        }
+      }).intents
+
+      // Parent state machine is in TICKED1 state
+      tock1()
+      // Child state machine starts in TICKED2 state
+      tock2()
+    })
+
     it('should support localState in the SAM instance', () => {
       const clock = fsm({
         componentName: 'tester',
@@ -347,8 +451,8 @@ describe('FSM tests', () => {
           name: 'tester',
           localState: clock.initialState({}),
           actions: [
-            ['TICK', () => ({ tick: true, tock: false }), 'TICK'],
-            ['TOCK', () => ({ tock: true, tick: false })]
+            ['TICK', () => ({ tick: true, tock: false }), clock],
+            ['TOCK', () => ({ tock: true, tick: false }), clock]
           ],
           acceptors: [
             ...clock.acceptors,
@@ -480,8 +584,8 @@ describe('FSM tests', () => {
         initialState: startState,
         component: {
           actions: [
-            ['TICK_GUARDED', () => ({ tick: true, tock: false, incrementBy: 1 })],
-            ['TOCK_GUARDED', () => ({ tock: true, tick: false, incrementBy: 1 })]
+            ['TICK_GUARDED', () => ({ tick: true, tock: false, incrementBy: 1 }), clock],
+            ['TOCK_GUARDED', () => ({ tock: true, tick: false, incrementBy: 1 }), clock]
           ],
           acceptors: [
             ...clock.acceptors,

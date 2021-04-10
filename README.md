@@ -13,6 +13,7 @@
   - [Integration with SAM](#integration-with-sam)
     - [Next-Action predicates](#next-action-predicates)
     - [Transition guards](#transition-guards)
+    - [Composite State](#composite-state)
     - [Exception Handling](#exception-handling)  
   - [Alternative specification formats](#alternative-specification-format)  
   - [State Diagram](#state-diagram)
@@ -184,6 +185,7 @@ Here is the new [Rocket Launcher example](https://codepen.io/sam-pattern/pen/XWN
 - `actions`               : an object where the keys are the action labels and the values the array of possible resulting states (one state only for deterministic state machines)
 - `states`                : an object where the keys are the state labels and the values are allowed transitions from the corresponding state (as an array of action lables). States may optionally include `next-actions` that can be added to the next-action-predicate (nap) of a SAM instance
 - `transitions`           : an alternative way to define the FSM specification (please see section on [Transitions](##alternative-specification-format))
+- `composite`             : expresses that the current state machine is a composite state of another state machine
 - `deterministic`         : a boolean value, `true` if the FSM is deterministic
 - `enforceAllowedActions` : a boolean value, when `true` the acceptors will validate that a valid action is used to transition away from a state
 - `pc`                    : a string that is used to rename the `pc` variable, `{ pc: 'status' }` will use `model.status` as the control state variable.
@@ -315,6 +317,38 @@ const clock = fsm({
 
 As their name suggests the transition will only be possible while the condition is true. In the case above, the transition will be disallowed once the counter value is greater or equal to 5. The last transition allowed would increment the counter value to 5 and from that point on, the clock won't be able to `tick` or `tock`.
 
+#### Composite State
+
+Since a SAM instance can run multiple state machines, the `sam-fsm` library also supports the concept of `composite state` when a state machine can only accept actions when another state machine is in a particular state. The composite state fsm can also be specified to execute automatic actions on the parent fsm on specific states (success, failure,...)
+
+The composite descriptor specifies the parent fsm composite state label (`COMPOSITE_STATE` in the snippet below). That state value acts as a global guard of the composite fsm. The composite fsm will start in the pc0 state each time the parent transitions to the composite state.
+
+Conversely, the composite fsm can specify automatic actions on the parent fsm as composite transitions. On a given state (for instance `END`, the composite fsm will automatically execute the specified parent action and pass the proposal parameters (in addition to its own state)).
+
+When the parent and/or composite fsm use their local states, the same logic applies.
+
+```javascript
+const parentFSM = fsm({ 
+  pc: 'parentStatus', 
+  states: {
+    COMPOSITE_STATE: { ... }
+  },
+  ... 
+})
+
+const compositeStateFSM = fsm({ 
+        ...
+        composite: {
+          of: parentFSM,
+          onState: { pc: 'parentStatus', label: 'COMPOSITE_STATE', component: 'optionalParentComponentName' },
+          transitions: [
+            { onState: 'END', action: intentToTrigger, proposal: ['counter'] }
+          ]
+        }
+        ...
+})
+```
+
 #### Exception Handling
 
 Exceptions are reported as SAM exceptions which can be accessed via these four SAM methods:
@@ -441,6 +475,7 @@ Please see [the unit tests](https://github.com/jdubray/sam-fsm/tree/master/test)
 Please post your questions/comments on the [SAM-pattern forum](https://gitter.im/jdubray/sam)
 
 ## Change Log
+- 0.9.18  Adds support for composite state machine
 - 0.9.17  Adds GraphViz state diagram
 - 0.9.15  Adds tests for labeled SAM actions
 - 0.9.12  Minifies the lib  (3.4kB)
