@@ -110,12 +110,18 @@ describe('FSM tests', () => {
     })
 
     it('but it should tack (async action support)', (done) => {
-      tack(() => {
-        const rsd = clock.runtimeStateDiagram()
-        expect(rsd.indexOf('TACKED')).to.be.greaterThan(0)
-        done()
-      })
+      tack(done)
       
+    })
+
+    it('should create a runtime state diagram', () => {
+        const rsd = clock.runtimeStateDiagram()
+        const tackedIndex = rsd.indexOf('TACKED')
+        const tackedCount = (rsd.match(/TACKED/g) || []).length
+        const tickedCount = (rsd.match(/TICKED/g) || []).length
+        expect(tackedIndex).to.be.greaterThan(0)
+        expect(tickedCount).to.be.equal(5)
+        expect(tackedCount).to.be.equal(2)
     })
 
   })
