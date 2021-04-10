@@ -485,6 +485,10 @@ TOCKED -> END [label = "STOP\n counter > 5"];
 
 The diagram generator is capable of displaying conditions (see unit tests for an example):
 
+The fsm is also capable of creating a representation of the runtime state diagram:
+```
+clock.runtimeStateDiagram()
+```
 <img src="graphviz.png"
      style="width: 300px" />
 
@@ -501,6 +505,7 @@ Please see [the unit tests](https://github.com/jdubray/sam-fsm/tree/master/test)
 Please post your questions/comments on the [SAM-pattern forum](https://gitter.im/jdubray/sam)
 
 ## Change Log
+- 0.9.20  Adds support for run time state diagrams
 - 0.9.19  Adds support for composite state machine
 - 0.9.17  Adds GraphViz state diagram
 - 0.9.15  Adds tests for labeled SAM actions

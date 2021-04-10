@@ -1,6 +1,6 @@
 {
   "name": "sam-fsm",
-  "version": "0.9.19",
+  "version": "0.9.20",
   "description": "Finite State Machine library for the SAM Pattern",
   "main": "./dist/fsm.js",
   "scripts": {
@@ -27,9 +27,6 @@
     "url": "https://github.com/jdubray/sam-fsm/issues"
   },
   "homepage": "https://github.com/jdubray/sam-fsm#readme",
-  "dependencies": {
-    "sam-pattern": "^1.5.10"
-  },
   "devDependencies": {
     "@babel/cli": "^7.4.4",
     "@babel/core": "^7.4.5",
@@ -57,7 +54,8 @@
     "rollup-plugin-node-resolve": "^5.2.0",
     "rollup-plugin-replace": "^2.2.0",
     "rollup-plugin-terser": "^5.1.0",
-    "uglify-es": "^3.3.9"
+    "uglify-es": "^3.3.9",
+    "sam-pattern": "^1.5.10"
   },
   "unpkg": "dist/fsm.js"
 }
