@@ -1,5 +1,17 @@
 /* eslint-disable no-unused-expressions */
 /* eslint-disable no-undef */
+
+// Permission to use, copy, modify, and/or distribute this software for any purpose
+// with or without fee is hereby granted, provided that the above copyright notice
+// and this permission notice appear in all copies.
+
+// THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+// REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
+// FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT,
+// OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA
+// OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION,
+// ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
 const { expect } = require('chai')
 const {
   SAM, first, last, api, createInstance, doNotRender, utils: { E }, events
@@ -85,7 +97,7 @@ describe('FSM tests', () => {
             }
           }
         }
-        // expect(state.hasError()).to.equal(false)
+        expect(state.hasError()).to.equal(false)
       }
     }).intents
 
@@ -133,6 +145,7 @@ describe('FSM tests', () => {
       proposal.then(({ test, __actionName }) => expect(test).to.equal(true) 
                                                 && expect(__actionName).to.equal('TEST')
                                                 )
+      expect(myAction.__stateMachineId).to.equal(clock.id)
     })
 
     it('should enforce transitions and return no error for a valid transition', () => {
@@ -319,6 +332,7 @@ describe('FSM tests', () => {
               expect(state.status2).to.equal('TOCKED2')
             } 
           }
+          expect(state.hasError()).to.equal(false)
         }
       }).intents
 
@@ -423,6 +437,7 @@ describe('FSM tests', () => {
               expect(state.status2).to.equal('TOCKED2')
             } 
           }
+          expect(state.hasError()).to.equal(false)
         }
       }).intents
 
@@ -483,6 +498,7 @@ describe('FSM tests', () => {
               expect(state.localState('tester').status).to.equal('TOCKED')
             } 
           }
+          expect(state.hasError()).to.equal(false)
         }
       }).intents
   
@@ -619,6 +635,7 @@ describe('FSM tests', () => {
             } 
           }
           expect(state.counter).to.be.lessThan(6)
+          expect(state.hasError()).to.equal(false)
         }
       }).intents
 

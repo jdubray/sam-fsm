@@ -505,6 +505,7 @@ Please see [the unit tests](https://github.com/jdubray/sam-fsm/tree/master/test)
 Please post your questions/comments on the [SAM-pattern forum](https://gitter.im/jdubray/sam)
 
 ## Change Log
+- 0.9.24  RC2 `sam-fsm' is ready!
 - 0.9.23  Adds indexed action to the runtime state diagrams
 - 0.9.20  Adds support for runtime state diagrams
 - 0.9.19  Adds support for composite state machine
