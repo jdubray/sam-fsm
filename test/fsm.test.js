@@ -323,9 +323,11 @@ describe('FSM tests', () => {
       }).intents
 
       tock1()
-      tock2()
       tick1()
+      tock1()
+      tock2()
       tick2()
+      tock2()
     })
 
     it('should support composite state machines concurrently in the same SAM instance', () => {
@@ -553,7 +555,7 @@ describe('FSM tests', () => {
       actions.tock().then(proposal => accept(model)(proposal))
     })
 
-    it('should enforce transition guards', () => {
+    it('should enforce transition guards', (done) => {
       const GuardedFSM = createInstance({ instanceName: 'GuardedFSM' })
 
       const clock = fsm({
@@ -620,6 +622,7 @@ describe('FSM tests', () => {
         }
       }).intents
 
+     
       tick()
       tock()
       tick()
@@ -629,6 +632,18 @@ describe('FSM tests', () => {
       tick()
       tock()
       tick()
+
+      setTimeout(() => {
+          const rsd = clock.runtimeStateDiagram()
+          const tickedCount = (rsd.match(/TICKED/g) || []).length
+          const tickGuardedCount = (rsd.match(/TICK_GUARDED/g) || []).length
+          expect(rsd.indexOf('5. ')).to.be.greaterThan(0)
+          expect(tickedCount).to.be.equal(5)
+          expect(tickGuardedCount).to.be.equal(3)
+          done()
+        }, 
+        1000
+      )
     })
 
     it('should create a state diagram', () => {
@@ -668,6 +683,8 @@ describe('FSM tests', () => {
       const stateDiagram = clockD.stateDiagram.trim()
       expect(stateDiagram[0]).to.equal('d')
       expect(stateDiagram[stateDiagram.length - 1]).to.equal('}')
+
+
     })
   })
 })

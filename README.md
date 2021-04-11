@@ -462,7 +462,7 @@ The function uses the first `from` state as the start state (`pc0`) and adds `de
 
 ### State Diagram
 
-The fsm comes with a [graphViz formated](http://magjac.com/graphviz-visual-editor/) state diagram
+The fsm comes with a [graphViz formated](https://edotor.net/) state diagram. Here is [another editor](http://magjac.com/graphviz-visual-editor/)
 
 ```javascript
 const clock = fsm({ ... })
@@ -505,7 +505,7 @@ Please see [the unit tests](https://github.com/jdubray/sam-fsm/tree/master/test)
 Please post your questions/comments on the [SAM-pattern forum](https://gitter.im/jdubray/sam)
 
 ## Change Log
-- 0.9.21  Adds indexed action to the runtime state diagrams
+- 0.9.23  Adds indexed action to the runtime state diagrams
 - 0.9.20  Adds support for runtime state diagrams
 - 0.9.19  Adds support for composite state machine
 - 0.9.17  Adds GraphViz state diagram
