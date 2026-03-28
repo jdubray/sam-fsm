@@ -15,7 +15,7 @@
 const { expect } = require('chai')
 const {
   SAM, first, last, api, createInstance, doNotRender, utils: { E }, events
-} = require('sam-pattern')
+} = require('@cognitive-fab/sam-pattern')
 
 // Create a new SAM instance
 const FSMTest = createInstance({ instanceName: 'FSMTest' })

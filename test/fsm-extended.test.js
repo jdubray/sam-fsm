@@ -2,7 +2,7 @@
 /* eslint-disable no-undef */
 const { expect } = require('chai')
 
-const { createInstance } = require('sam-pattern')
+const { createInstance } = require('@cognitive-fab/sam-pattern')
 const { fsm } = require('../dist/fsm')
 
 // ---------------------------------------------------------------------------

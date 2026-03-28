@@ -4,3 +4,4 @@ test/
 .babelrc
 .editorconfig
 .eslintrc
+rollup.config.js
